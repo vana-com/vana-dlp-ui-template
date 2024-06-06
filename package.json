@@ -1,0 +1,43 @@
+{
+  "name": "datadao-demo",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@mantine/carousel": "^7.9.1",
+    "@mantine/core": "^7.9.0",
+    "@mantine/dropzone": "^7.10.1",
+    "@mantine/form": "^7.9.0",
+    "@mantine/hooks": "^7.9.0",
+    "@mantine/notifications": "^7.9.0",
+    "@react-oauth/google": "^0.12.1",
+    "clsx": "^2.1.1",
+    "dropbox": "^10.34.0",
+    "embla-carousel-autoplay": "^7.1.0",
+    "embla-carousel-react": "^7.1.0",
+    "ethers": "^6.12.1",
+    "next": "14.2.3",
+    "openpgp": "^5.11.1",
+    "react": "^18",
+    "react-dom": "^18",
+    "uuid": "^9.0.1",
+    "zustand": "^4.5.2"
+  },
+  "devDependencies": {
+    "@iconify/react": "^4.1.1",
+    "@types/node": "^20",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "@types/uuid": "^9.0.8",
+    "eslint": "^8",
+    "eslint-config-next": "14.2.3",
+    "postcss": "^8",
+    "tailwindcss": "^3.4.1",
+    "typescript": "^5"
+  }
+}

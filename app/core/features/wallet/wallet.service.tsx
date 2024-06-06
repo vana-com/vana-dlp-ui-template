@@ -1,0 +1,51 @@
+import { BrowserProvider, JsonRpcSigner } from "ethers";
+import { v4 } from "uuid";
+
+declare global {
+  interface Window {
+    ethereum: any;
+  }
+}
+
+const connect = async (signer: JsonRpcSigner) => {
+  const address = await signer.getAddress();
+
+  const nonce = v4();
+  const signature = await signer.signMessage(nonce);
+  return { address, signature, nonce };
+};
+
+export const connectMetamask = async () => {
+  if (!window.ethereum) {
+    console.error("Please install MetaMask");
+    return { error: "MetaMask not found" };
+  }
+
+  const provider = new BrowserProvider(window.ethereum);
+
+  try {
+    await provider.send("eth_requestAccounts", []);
+
+    const signer = await provider.getSigner();
+    const { address } = await connect(signer);
+
+    return { address };
+  } catch (error: any) {
+    console.error("Error connecting to MetaMask:", error);
+    return { error: error.message };
+  }
+};
+
+export const signMessage = async (
+  address: string,
+  message: string
+): Promise<string> => {
+  if (!window.ethereum) {
+    throw new Error("MetaMask not found");
+  }
+
+  const provider = new BrowserProvider(window.ethereum);
+  const signer = await provider.getSigner(address);
+  const signature = await signer.signMessage(message);
+  return signature;
+};
