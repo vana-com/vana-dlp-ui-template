@@ -8,7 +8,7 @@ const config = {
   googleDriveFolderName: "data-dao",
   googleClientId: process.env.NEXT_PUBLIC_GOOGLE_DRIVE_CLIENT_ID || "",
   network: process.env.NEXT_PUBLIC_NETWORK || "test",
-  smartContractAddressVanaTestnet:
+  smartContractAddressSatoriTestnet:
     process.env.NEXT_PUBLIC_SMART_CONTRACT_ADDRESS_VANA_TESTNET || "",
   smartContractAddressSepolia:
     process.env.NEXT_PUBLIC_SMART_CONTRACT_ADDRESS_SEPOLIA || "",
