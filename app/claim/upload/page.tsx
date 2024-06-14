@@ -43,6 +43,7 @@ const FIXED_MESSAGE = "Please sign to retrieve your encryption key";
 
 export default function Page() {
   const contractAddress = useNetworkStore((state) => state.contract);
+  const publicKeyBase64 = useNetworkStore((state) => state.publicKeyBase64);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const network = useNetworkStore((state) => state.network);
   const storageProvider = useStorageStore((state) => state.provider);
@@ -133,14 +134,14 @@ export default function Page() {
       setEncryptedFile(encryptedFile);
 
       // Encrypt the signature (symmetric key) using the DLP public key
-      if (!config.publicKeyBase64) {
+      if (!publicKeyBase64) {
         setUploadState("initial");
-        console.error("Public key not found in config");
-        throw new Error("Public key not found in config");
+        console.error("Public key not found");
+        throw new Error("Public key not found");
       }
 
       const publicKey = await openpgp.readKey({
-        armoredKey: atob(config.publicKeyBase64),
+        armoredKey: atob(publicKeyBase64 as string),
       });
       const encryptedSignature = await openpgp.encrypt({
         message: await openpgp.createMessage({ text: signature }),
