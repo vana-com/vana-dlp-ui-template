@@ -4,6 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "doppler-dev": "doppler setup --project chatgpt-dlp-ui --config dev && doppler run -- yarn dev",
+    "test-build": "doppler setup --project chatgpt-dlp-ui --config dev && doppler run -- next build && next start",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"

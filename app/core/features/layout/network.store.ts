@@ -2,7 +2,7 @@ import { config } from "@/app/config";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-export type Network = "test" | "moksha" | "satori" | "mainnet";
+export type Network = "moksha" | "satori" | "mainnet";
 
 type NetworkState = {
   network: Network;
@@ -16,15 +16,12 @@ type NetworkState = {
 };
 
 const defaultContractAddresses = {
-  // TODO: test should be deprecated
-  test: config.smartContractAddressSatoriTestnet,
   satori: config.smartContractAddressSatoriTestnet,
   moksha: config.smartContractAddressMokshaTestnet,
   mainnet: config.smartContractAddressSepolia,
 };
 
 const defaultPublicKeyMap = {
-  test: config.publicKeyBase64,
   satori: config.publicKeyBase64,
   moksha: config.publicKeyBase64,
   mainnet: config.publicKeyBase64,
