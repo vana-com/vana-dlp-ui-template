@@ -29,6 +29,8 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   const network = useNetworkStore((state) => state.network);
   const setNetwork = useNetworkStore((state) => state.setNetwork);
+  const setContract = useNetworkStore((state) => state.setContract);
+  const setPublicKeyBase64 = useNetworkStore((state) => state.setPublicKeyBase64);
 
   const [sidebarOpened, { toggle: toggleSidebar }] = useDisclosure();
   const walletAddress = useWalletStore((state) => state.walletAddress);
@@ -42,6 +44,13 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({
       toggleSidebar();
     }
   }, [pathname]);
+
+  // if query string contains `internal`, show internal features
+  let showInternalFeatures = false;
+  if (typeof window !== "undefined") {
+    const urlParams = new URLSearchParams(window.location.search);
+    showInternalFeatures = urlParams.has("internal");
+  }
 
   return (
     <AppShell
@@ -75,17 +84,27 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({
                     <Menu.Target>
                       <UnstyledButton>
                         <Badge color="red" variant="light" size="lg">
-                          testnet
+                          {network}
                         </Badge>
                       </UnstyledButton>
                     </Menu.Target>
 
                     <Menu.Dropdown>
                       <Menu.Label>Network</Menu.Label>
-                      <Menu.Item
-                        onClick={() => setNetwork("testnet")}
+                      {showInternalFeatures && <Menu.Item
+                        onClick={() => setNetwork("moksha")}
                         leftSection={
-                          network === "testnet" && (
+                          network === "moksha" && (
+                            <Icon icon="carbon:checkmark" />
+                          )
+                        }
+                      >
+                        Moksha Testnet
+                      </Menu.Item>}
+                      <Menu.Item
+                        onClick={() => setNetwork("satori")}
+                        leftSection={
+                          network === "satori" && (
                             <Icon icon="carbon:checkmark" />
                           )
                         }
