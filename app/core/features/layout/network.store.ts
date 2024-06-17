@@ -21,13 +21,14 @@ type NetworkState = {
   currency: string;
 };
 
+const defaultNetworkConfig = networks[config.network as keyof typeof networks];
 export const useNetworkStore = create<NetworkState>()(
   persist(
     (set) => {
-      const networkConfig = networks[config.network as keyof typeof networks];
       return {
         network: config.network as Network,
         setNetwork: (network: Network) => {
+          const networkConfig = networks[network as keyof typeof networks];
           set({
             network,
             ...networkConfig,
@@ -35,17 +36,17 @@ export const useNetworkStore = create<NetworkState>()(
           });
         },
 
-        contract: networkConfig.contract,
+        contract: defaultNetworkConfig.contract,
         setContract: (contract) => set({ contract }),
 
         publicKeyBase64: config.publicKeyBase64,
         setPublicKeyBase64: (publicKeyBase64) => set({ publicKeyBase64 }),
 
-        chainId: networkConfig.chainId,
-        rpcUrl: networkConfig.rpcUrl,
-        chainName: networkConfig.chainName,
-        explorerUrl: networkConfig.explorerUrl,
-        currency: networkConfig.currency,
+        chainId: defaultNetworkConfig.chainId,
+        rpcUrl: defaultNetworkConfig.rpcUrl,
+        chainName: defaultNetworkConfig.chainName,
+        explorerUrl: defaultNetworkConfig.explorerUrl,
+        currency: defaultNetworkConfig.currency,
       }
     },
     {
