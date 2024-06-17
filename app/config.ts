@@ -25,7 +25,7 @@ const networks = {
   },
 }
 
-const network = process.env.NEXT_PUBLIC_NETWORK || "satori";
+const network = (process.env.NEXT_PUBLIC_NETWORK || "satori") as keyof typeof networks;
 
 if (!Object.keys(networks).includes(network)) {
   throw new Error(`Invalid network type: ${network}`);
