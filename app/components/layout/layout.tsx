@@ -11,6 +11,7 @@ import {
   Flex,
   Group,
   Menu,
+  SelectProps,
   Stack,
   Text,
   Title,
@@ -42,6 +43,21 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({
       toggleSidebar();
     }
   }, [pathname]);
+
+  const renderSelectOption: SelectProps["renderOption"] = ({ option }) => {
+    if (option.value === "testnet") {
+      return option.label;
+    }
+
+    return (
+      <Group flex="1" gap="xs">
+        {option.label}
+        <Badge size="sm" variant="light" color="dark">
+          Coming Soon
+        </Badge>
+      </Group>
+    );
+  };
 
   return (
     <AppShell

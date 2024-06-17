@@ -18,16 +18,14 @@ type NetworkState = {
 export const useNetworkStore = create<NetworkState>()(
   persist(
     (set) => ({
-      contract:
-        ["test", "satori"].includes(config.network)
-          ? config.smartContractAddressSatoriTestnet
-          : config.smartContractAddressSepolia,
+      contract: ["test", "satori"].includes(config.network)
+        ? config.smartContractAddressVanaTestnet
+        : config.smartContractAddressSepolia,
       setContract: (contract) => set({ contract }),
 
-      publicKeyBase64:
-        ["test", "satori"].includes(config.network)
-          ? config.publicKeyBase64
-          : config.publicKeyBase64, // TODO
+      publicKeyBase64: ["test", "satori"].includes(config.network)
+        ? config.publicKeyBase64
+        : config.publicKeyBase64, // TODO
       setPublicKeyBase64: (publicKeyBase64) => set({ publicKeyBase64 }),
 
       network: config.network === "test" ? "testnet" : "mainnet",
