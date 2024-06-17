@@ -1,12 +1,16 @@
 {
-  "name": "datadao-demo",
+  "name": "chatgpt-dlp-ui",
   "version": "0.1.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "doppler-dev-personal": "doppler setup --project chatgpt-dlp-ui --config dev_personal && doppler run -- yarn dev --port 4020",
+    "doppler-dev": "doppler setup --project chatgpt-dlp-ui --config dev && doppler run -- yarn dev --port 4020",
+    "doppler-stg": "doppler setup --project chatgpt-dlp-ui --config stg && doppler run -- yarn dev --port 4020",
+    "doppler-prod": "doppler setup --project chatgpt-dlp-ui --config prd && doppler run -- yarn dev --port 4020"
   },
   "dependencies": {
     "@mantine/carousel": "^7.9.1",
@@ -16,6 +20,7 @@
     "@mantine/hooks": "^7.9.0",
     "@mantine/notifications": "^7.9.0",
     "@react-oauth/google": "^0.12.1",
+    "@usecapsule/react-sdk": "^3.3.0",
     "clsx": "^2.1.1",
     "dropbox": "^10.34.0",
     "embla-carousel-autoplay": "^7.1.0",

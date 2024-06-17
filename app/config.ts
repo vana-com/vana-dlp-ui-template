@@ -4,8 +4,8 @@ const config = {
 
   dropboxCallbackUrl: process.env.NEXT_PUBLIC_DROPBOX_CALLBACK_URL || "",
   dropboxClientId: process.env.NEXT_PUBLIC_DROPBOX_CLIENT_ID || "",
-  dropboxFolderName: "data-dao",
-  googleDriveFolderName: "data-dao",
+  dropboxFolderName: "gpt-dao",
+  googleDriveFolderName: "gpt-dao",
   googleClientId: process.env.NEXT_PUBLIC_GOOGLE_DRIVE_CLIENT_ID || "",
   network: process.env.NEXT_PUBLIC_NETWORK || "test",
   smartContractAddressVanaTestnet:

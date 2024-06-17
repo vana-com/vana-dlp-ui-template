@@ -10,20 +10,23 @@ import {
   Container,
   Flex,
   Group,
+  Image,
   Menu,
   SelectProps,
   Stack,
   Text,
-  Title,
-  UnstyledButton,
+  UnstyledButton
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect } from "react";
-import { SettingsButton } from "./settings-button";
 
-const links: { title: string; href: string }[] = [];
+const links = [
+  { title: "Leaderboard", href: "/leaderboard" },
+  { title: "Claim", href: "/claim" },
+  { title: "About", href: "/terms" },
+];
 
 export const Layout: React.FC<{ children: React.ReactNode }> = ({
   children,
@@ -83,9 +86,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({
 
                 <Flex pos="relative" dir="row" align="center" gap="sm">
                   <Link href="/">
-                    <Title order={5} ff="monospace">
-                      DataDAO
-                    </Title>
+                    <Image radius="md" src="/images/logo.svg" />
                   </Link>
                   <Menu shadow="md" width={250}>
                     <Menu.Target>
@@ -163,7 +164,6 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({
                     Connect
                   </Button>
                 )}
-                <SettingsButton />
               </Group>
             </Group>
           </Group>
