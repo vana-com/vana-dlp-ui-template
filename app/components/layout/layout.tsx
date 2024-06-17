@@ -98,7 +98,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({
                     <Menu.Target>
                       <UnstyledButton>
                         <Badge color="red" variant="light" size="lg">
-                          {network}
+                          {network as string}
                         </Badge>
                       </UnstyledButton>
                     </Menu.Target>

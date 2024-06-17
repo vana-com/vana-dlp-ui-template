@@ -5,7 +5,7 @@ const networks = {
     chainName: "Vana Moksha Testnet",
     explorerUrl: "https://moksha.vanascan.io",
     currency: "DAT",
-    contract: process.env.NEXT_PUBLIC_SMART_CONTRACT_ADDRESS_MOKSHA_TESTNET || "xyz",
+    contract: process.env.NEXT_PUBLIC_SMART_CONTRACT_ADDRESS_MOKSHA_TESTNET || "",
   },
   satori: {
     chainId: "14801",
@@ -13,7 +13,7 @@ const networks = {
     chainName: "Vana Satori Testnet",
     explorerUrl: "https://satori.vanascan.io",
     currency: "DAT",
-    contract: process.env.NEXT_PUBLIC_SMART_CONTRACT_ADDRESS_SATORI_TESTNET || "123",
+    contract: process.env.NEXT_PUBLIC_SMART_CONTRACT_ADDRESS_SATORI_TESTNET || "",
   },
   mainnet: {
     chainId: "1480",
@@ -21,12 +21,11 @@ const networks = {
     chainName: "Vana Mainnet",
     explorerUrl: "https://vanascan.io",
     currency: "DAT",
-    contract: process.env.NEXT_PUBLIC_SMART_CONTRACT_ADDRESS_MAINNET || "zzz",
+    contract: process.env.NEXT_PUBLIC_SMART_CONTRACT_ADDRESS_MAINNET || "",
   },
 }
 
-// const network = process.env.NEXT_PUBLIC_NETWORK || "satori";
-const network = "satori";
+const network = process.env.NEXT_PUBLIC_NETWORK || "satori";
 
 if (!Object.keys(networks).includes(network)) {
   throw new Error(`Invalid network type: ${network}`);
@@ -51,8 +50,7 @@ const config = {
   googleDriveFolderName: "data-dao",
   googleClientId: process.env.NEXT_PUBLIC_GOOGLE_DRIVE_CLIENT_ID || "",
 
-  publicKeyBase64:
-    process.env.NEXT_PUBLIC_FILE_ENCRYPTION_PUBLIC_KEY_BASE64 || "ahahah",
+  publicKeyBase64: process.env.NEXT_PUBLIC_FILE_ENCRYPTION_PUBLIC_KEY_BASE64 || "",
 
   network,
 };

@@ -2,7 +2,7 @@ import { config, networks } from "@/app/config";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-export type Network = "moksha" | "satori" | "mainnet";
+export type Network = keyof typeof networks | string;
 
 type NetworkState = {
   network: Network;
@@ -23,33 +23,31 @@ type NetworkState = {
 
 export const useNetworkStore = create<NetworkState>()(
   persist(
-    (set, get) => ({
-      network: config.network as Network,
-      setNetwork: (network: Network) => {
-        console.log({
-          network,
-          ...networks[network],
-          publicKeyBase64: config.publicKeyBase64,
-        })
-        set({
-          network,
-          ...networks[network],
-          publicKeyBase64: config.publicKeyBase64,
-        });
-      },
+    (set) => {
+      const networkConfig = networks[config.network as keyof typeof networks];
+      return {
+        network: config.network as Network,
+        setNetwork: (network: Network) => {
+          set({
+            network,
+            ...networkConfig,
+            publicKeyBase64: config.publicKeyBase64,
+          });
+        },
 
-      contract: networks[config.network].contract,
-      setContract: (contract) => set({ contract }),
+        contract: networkConfig.contract,
+        setContract: (contract) => set({ contract }),
 
-      publicKeyBase64: config.publicKeyBase64,
-      setPublicKeyBase64: (publicKeyBase64) => set({ publicKeyBase64 }),
+        publicKeyBase64: config.publicKeyBase64,
+        setPublicKeyBase64: (publicKeyBase64) => set({ publicKeyBase64 }),
 
-      chainId: networks[config.network].chainId,
-      rpcUrl: networks[config.network].rpcUrl,
-      chainName: networks[config.network].chainName,
-      explorerUrl: networks[config.network].explorerUrl,
-      currency: networks[config.network].currency,
-    }),
+        chainId: networkConfig.chainId,
+        rpcUrl: networkConfig.rpcUrl,
+        chainName: networkConfig.chainName,
+        explorerUrl: networkConfig.explorerUrl,
+        currency: networkConfig.currency,
+      }
+    },
     {
       name: "network-storage",
       // We could include only specific fields to be persisted if necessary
