@@ -31,7 +31,7 @@ import Autoplay from "embla-carousel-autoplay";
 import { ethers } from "ethers";
 import * as openpgp from "openpgp";
 import { useEffect, useRef, useState } from "react";
-import DataLiquidityPool from "../../contracts/DataLiquidityPool.json";
+import DataLiquidityPool from "./../../contracts/DataLiquidityPool.json";
 import { ConnectStep } from "./components/connect";
 import { Success } from "./components/success";
 import { UploadState } from "./components/upload";
@@ -42,8 +42,6 @@ import { Disclaimer } from "../components/disclaimer";
 const FIXED_MESSAGE = "Please sign to retrieve your encryption key";
 
 export default function Page() {
-  const contractAddress = useNetworkStore((state) => state.contract);
-  const publicKeyBase64 = useNetworkStore((state) => state.publicKeyBase64);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const network = useNetworkStore((state) => state.network);
   const storageProvider = useStorageStore((state) => state.provider);
@@ -134,14 +132,14 @@ export default function Page() {
       setEncryptedFile(encryptedFile);
 
       // Encrypt the signature (symmetric key) using the DLP public key
-      if (!publicKeyBase64) {
+      if (!config.publicKeyBase64) {
         setUploadState("initial");
-        console.error("Public key not found");
-        throw new Error("Public key not found");
+        console.error("Public key not found in config");
+        throw new Error("Public key not found in config");
       }
 
       const publicKey = await openpgp.readKey({
-        armoredKey: atob(publicKeyBase64 as string),
+        armoredKey: atob(config.publicKeyBase64),
       });
       const encryptedSignature = await openpgp.encrypt({
         message: await openpgp.createMessage({ text: signature }),
@@ -154,6 +152,10 @@ export default function Page() {
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
 
+      const contractAddress =
+        network === "testnet"
+          ? config.smartContractAddressVanaTestnet
+          : config.smartContractAddressSepolia;
       const contractABI = [...DataLiquidityPool.abi];
       const contract = new ethers.Contract(
         contractAddress as string,

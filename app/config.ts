@@ -8,10 +8,17 @@ const config = {
   googleDriveFolderName: "data-dao",
   googleClientId: process.env.NEXT_PUBLIC_GOOGLE_DRIVE_CLIENT_ID || "",
   network: process.env.NEXT_PUBLIC_NETWORK || "test",
-  smartContractAddressSatoriTestnet:
+  smartContractAddressVanaTestnet:
     process.env.NEXT_PUBLIC_SMART_CONTRACT_ADDRESS_VANA_TESTNET || "",
   smartContractAddressSepolia:
     process.env.NEXT_PUBLIC_SMART_CONTRACT_ADDRESS_SEPOLIA || "",
+
+  chainId: process.env.NEXT_PUBLIC_CHAIN_ID || "14801",
+  rpcUrl: process.env.NEXT_PUBLIC_RPC_URL || "https://rpc.satori.vana.com",
+  chainName: process.env.NEXT_PUBLIC_CHAIN_NAME || "Vana Satori Testnet",
+  explorerUrl:
+    process.env.NEXT_PUBLIC_EXPLORER_URL || "https://satori.vanascan.io",
+  currency: process.env.NEXT_PUBLIC_CURRENCY || "DAT",
 };
 
 export { config };

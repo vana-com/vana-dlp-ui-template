@@ -49,3 +49,50 @@ export const signMessage = async (
   const signature = await signer.signMessage(message);
   return signature;
 };
+
+export const requestNetworkSwitch = async ({
+  chainId,
+  rpcUrl,
+  chainName,
+  explorerUrl,
+  currency,
+}: {
+  chainId: string | number;
+  rpcUrl: string;
+  chainName: string;
+  currency: string;
+  explorerUrl?: string;
+}) => {
+  const hexChainId = "0x" + Number(chainId).toString(16);
+
+  try {
+    await window.ethereum.request({
+      method: "wallet_switchEthereumChain",
+      params: [{ chainId: hexChainId }],
+    });
+  } catch (error: any) {
+    if (error.code === 4902) {
+      try {
+        await window.ethereum.request({
+          method: "wallet_addEthereumChain",
+          params: [
+            {
+              chainId: hexChainId,
+              rpcUrls: [rpcUrl],
+              chainName: chainName,
+              nativeCurrency: {
+                name: currency,
+                symbol: currency,
+                decimals: 18,
+              },
+              blockExplorerUrls: explorerUrl ? [explorerUrl] : [],
+            },
+          ],
+        });
+      } catch (error) {
+        console.log("Error switching the network", error); // * TODO : Handle error
+        return { error };
+      }
+    }
+  }
+};
