@@ -1,6 +1,5 @@
 "use client";
 
-import { config } from "@/app/config";
 import {
   FileMetadata,
   getShareLink,
@@ -43,9 +42,10 @@ const FIXED_MESSAGE = "Please sign to retrieve your encryption key";
 
 export default function Page() {
   const [shareUrl, setShareUrl] = useState<string | null>(null);
-  const network = useNetworkStore((state) => state.network);
   const storageProvider = useStorageStore((state) => state.provider);
+  const contractAddress = useNetworkStore((state) => state.contract);
   const dropboxToken = useStorageStore((state) => state.token);
+  const publicKeyBase64 = useNetworkStore((state) => state.publicKeyBase64);
   const isDropboxConnected = !!dropboxToken;
 
   const [opened, { close }] = useDisclosure(false);
@@ -132,14 +132,14 @@ export default function Page() {
       setEncryptedFile(encryptedFile);
 
       // Encrypt the signature (symmetric key) using the DLP public key
-      if (!config.publicKeyBase64) {
+      if (!publicKeyBase64) {
         setUploadState("initial");
         console.error("Public key not found in config");
         throw new Error("Public key not found in config");
       }
 
       const publicKey = await openpgp.readKey({
-        armoredKey: atob(config.publicKeyBase64),
+        armoredKey: atob(publicKeyBase64),
       });
       const encryptedSignature = await openpgp.encrypt({
         message: await openpgp.createMessage({ text: signature }),
@@ -152,10 +152,6 @@ export default function Page() {
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
 
-      const contractAddress =
-        network === "testnet"
-          ? config.smartContractAddressVanaTestnet
-          : config.smartContractAddressSepolia;
       const contractABI = [...DataLiquidityPool.abi];
       const contract = new ethers.Contract(
         contractAddress as string,
