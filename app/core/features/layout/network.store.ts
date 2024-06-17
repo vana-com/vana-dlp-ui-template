@@ -1,4 +1,4 @@
-import { config } from "@/app/config";
+import { config, networks } from "@/app/config";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
@@ -13,43 +13,56 @@ type NetworkState = {
 
   publicKeyBase64: string;
   setPublicKeyBase64: (publicKeyBase64: string) => void;
-};
 
-const defaultContractAddresses = {
-  satori: config.smartContractAddressSatoriTestnet,
-  moksha: config.smartContractAddressMokshaTestnet,
-  mainnet: config.smartContractAddressSepolia,
+  chainId: string;
+  rpcUrl: string;
+  chainName: string;
+  explorerUrl: string;
+  currency: string;
 };
-
-const defaultPublicKeyMap = {
-  satori: config.publicKeyBase64,
-  moksha: config.publicKeyBase64,
-  mainnet: config.publicKeyBase64,
-};
-
-if (!Object.keys(defaultContractAddresses).includes(config.network)) {
-  throw new Error(`Invalid network type: ${config.network}`);
-}
 
 export const useNetworkStore = create<NetworkState>()(
   persist(
     (set, get) => ({
       network: config.network as Network,
-      setNetwork: (network) =>
+      setNetwork: (network: Network) => {
+        console.log({
+          network,
+          ...networks[network],
+          publicKeyBase64: config.publicKeyBase64,
+        })
         set({
           network,
-          contract: defaultContractAddresses[network],
-          publicKeyBase64: defaultPublicKeyMap[network],
-        }),
+          ...networks[network],
+          publicKeyBase64: config.publicKeyBase64,
+        });
+      },
 
-      contract: defaultContractAddresses[config.network as Network],
+      contract: networks[config.network].contract,
       setContract: (contract) => set({ contract }),
 
-      publicKeyBase64: defaultPublicKeyMap[config.network as Network],
+      publicKeyBase64: config.publicKeyBase64,
       setPublicKeyBase64: (publicKeyBase64) => set({ publicKeyBase64 }),
+
+      chainId: networks[config.network].chainId,
+      rpcUrl: networks[config.network].rpcUrl,
+      chainName: networks[config.network].chainName,
+      explorerUrl: networks[config.network].explorerUrl,
+      currency: networks[config.network].currency,
     }),
     {
       name: "network-storage",
+      // We could include only specific fields to be persisted if necessary
+      // partialize: state => ({
+      //   network: state.network,
+      //   contract: state.contract,
+      //   publicKeyBase64: state.publicKeyBase64,
+      //   chainId: state.chainId,
+      //   rpcUrl: state.rpcUrl,
+      //   chainName: state.chainName,
+      //   explorerUrl: state.explorerUrl,
+      //   currency: state.currency,
+      // })
     }
   )
 );

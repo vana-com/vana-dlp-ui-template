@@ -1,6 +1,5 @@
 "use client";
 
-import { config } from "@/app/config";
 import {
   FileMetadata,
   getShareLink,
@@ -31,7 +30,7 @@ import Autoplay from "embla-carousel-autoplay";
 import { ethers } from "ethers";
 import * as openpgp from "openpgp";
 import { useEffect, useRef, useState } from "react";
-import DataLiquidityPool from "../../contracts/DataLiquidityPool.json";
+import DataLiquidityPool from "./../../contracts/DataLiquidityPool.json";
 import { ConnectStep } from "./components/connect";
 import { Success } from "./components/success";
 import { UploadState } from "./components/upload";
@@ -42,12 +41,11 @@ import { Disclaimer } from "../components/disclaimer";
 const FIXED_MESSAGE = "Please sign to retrieve your encryption key";
 
 export default function Page() {
-  const contractAddress = useNetworkStore((state) => state.contract);
-  const publicKeyBase64 = useNetworkStore((state) => state.publicKeyBase64);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
-  const network = useNetworkStore((state) => state.network);
   const storageProvider = useStorageStore((state) => state.provider);
+  const contractAddress = useNetworkStore((state) => state.contract);
   const dropboxToken = useStorageStore((state) => state.token);
+  const publicKeyBase64 = useNetworkStore((state) => state.publicKeyBase64);
   const isDropboxConnected = !!dropboxToken;
 
   const [opened, { close }] = useDisclosure(false);
@@ -136,12 +134,12 @@ export default function Page() {
       // Encrypt the signature (symmetric key) using the DLP public key
       if (!publicKeyBase64) {
         setUploadState("initial");
-        console.error("Public key not found");
-        throw new Error("Public key not found");
+        console.error("Public key not found in config");
+        throw new Error("Public key not found in config");
       }
 
       const publicKey = await openpgp.readKey({
-        armoredKey: atob(publicKeyBase64 as string),
+        armoredKey: atob(publicKeyBase64),
       });
       const encryptedSignature = await openpgp.encrypt({
         message: await openpgp.createMessage({ text: signature }),
