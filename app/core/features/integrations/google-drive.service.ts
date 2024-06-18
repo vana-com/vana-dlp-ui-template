@@ -128,29 +128,7 @@ const findOrCreateFolder = async (token: string, folderName: string) => {
 };
 
 const createSharableLink = async (token: string, fileId: string) => {
-  const url = `https://www.googleapis.com/drive/v3/files/${fileId}?fields=webViewLink`;
-
-  try {
-    const response = await fetch(url, {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    if (!response.ok)
-      throw new Error(
-        `Google Drive API returned error ${
-          response.status
-        }: ${await response.text()}`
-      );
-
-    const data = await response.json();
-    return data.webViewLink;
-  } catch (error) {
-    console.error("Failed to get Google Drive share link:", error);
-    throw error;
-  }
+  return `https://drive.google.com/uc?export=download&id=${fileId}`;
 };
 
 const updateFilePermissions = async (token: string, fileId: string) => {
