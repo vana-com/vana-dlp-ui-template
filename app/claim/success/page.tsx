@@ -20,7 +20,7 @@ export default function Page() {
             <Stack align="stretch" justify="center" gap="md">
               <Image
                 radius="md"
-                src={null}
+                src="/images/claim/instructions.png"
                 fallbackSrc="https://placehold.co/600x600?text=Placeholder"
               />
             </Stack>
@@ -34,16 +34,18 @@ export default function Page() {
             <Stack gap="lg">
               <Title order={5}>Congratulations</Title>
               <Text>
-                Lorem ipsum dolor sit amet consectetur. Etiam et nullam ac eget
-                nulla fringilla arcu ut. Massa viverra egestas varius.
+                You have successfully uploaded your encrypted data to the Data
+                Liquidity Pool.
               </Text>
               <Box>
                 <Stack gap={0} align="center" p="lg" bg="brand-5">
-                  <Title order={5}>15,000 $gptdat</Title>
-                  <Text>available for claim</Text>
+                  <Title order={5}>15,000 $GPTDAT</Title>
+                  {/* <Text>available for claim</Text> */}
                 </Stack>
               </Box>
-              <Button fullWidth color="brand-3">Claim</Button>
+              <Button fullWidth color="brand-3" disabled>
+                Claim (coming soon)
+              </Button>
             </Stack>
           </Grid.Col>
         </Grid>
