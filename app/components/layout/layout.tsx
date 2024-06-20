@@ -15,7 +15,7 @@ import {
   SelectProps,
   Stack,
   Text,
-  UnstyledButton
+  UnstyledButton,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import Link from "next/link";
@@ -33,6 +33,10 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   const network = useNetworkStore((state) => state.network);
   const setNetwork = useNetworkStore((state) => state.setNetwork);
+
+  useEffect(() => {
+    useNetworkStore.persist.rehydrate();
+  }, []);
 
   const [sidebarOpened, { toggle: toggleSidebar }] = useDisclosure();
   const walletAddress = useWalletStore((state) => state.walletAddress);
@@ -106,16 +110,18 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({
 
                     <Menu.Dropdown>
                       <Menu.Label>Network</Menu.Label>
-                      {showInternalFeatures && <Menu.Item
-                        onClick={() => setNetwork("moksha")}
-                        leftSection={
-                          network === "moksha" && (
-                            <Icon icon="carbon:checkmark" />
-                          )
-                        }
-                      >
-                        Moksha Testnet
-                      </Menu.Item>}
+                      {showInternalFeatures && (
+                        <Menu.Item
+                          onClick={() => setNetwork("moksha")}
+                          leftSection={
+                            network === "moksha" && (
+                              <Icon icon="carbon:checkmark" />
+                            )
+                          }
+                        >
+                          Moksha Testnet
+                        </Menu.Item>
+                      )}
                       <Menu.Item
                         onClick={() => setNetwork("satori")}
                         leftSection={
