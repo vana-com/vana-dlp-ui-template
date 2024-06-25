@@ -8,12 +8,10 @@ export const ConnectStep = () => {
     <Stack>
       <Script src="https://apis.google.com/js/api.js" />
       <Text>
-        In order to upload your file, you need to connect your cloud storage
-        account.
+        Connect your cloud storage account, where your encrypted hotdog photo will be stored.
       </Text>
       <Text>
-        We will never store your files. They will be encrypted and stored in
-        your storage account.
+        This gives you full control, as you can delete your data at any point.
       </Text>
       <Group>
         <DropboxButton />

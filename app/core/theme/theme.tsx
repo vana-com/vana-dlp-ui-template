@@ -89,13 +89,13 @@ export const theme = createTheme({
     xxl: rem(40),
   },
   colors: {
-    ["brand-1"]: colorsTuple("#90D26D"),
-    ["brand-2"]: colorsTuple("#A0AA96"),
-    ["brand-3"]: colorsTuple("#2D7865"),
-    ["brand-4"]: colorsTuple("#D9EDBF"),
-    ["brand-5"]: colorsTuple("#F7FFF4"),
-    ["brand-6"]: colorsTuple("#F3F8EE"),
-    ["brand-7"]: colorsTuple("#E0EAE3"),
-    ["brand-8"]: colorsTuple("#A5B3A5"),
+    ["brand-1"]: colorsTuple("#F5DEB3"),  // Mustard Yellow
+    ["brand-2"]: colorsTuple("#FF6347"),  // Ketchup Red
+    ["brand-3"]: colorsTuple("#8B4513"),  // Sausage Brown
+    ["brand-4"]: colorsTuple("#F5DEB3"),  // Bun Beige
+    ["brand-5"]: colorsTuple("#F5DEB3"),  // Mustard Gold
+    ["brand-6"]: colorsTuple("#DC143C"),  // Tomato Red
+    ["brand-7"]: colorsTuple("#FFE4B5"),  // Light Bun
+    ["brand-8"]: colorsTuple("#4389CE"),  // Blue
   },
 });

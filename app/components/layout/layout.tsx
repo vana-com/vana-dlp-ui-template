@@ -91,58 +91,11 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({
                 <Flex pos="relative" dir="row" align="center" gap="sm">
                   <Link href="/">
                     <Title order={5} ff="monospace">
-                      DataDAO
+                      <Badge color="red" variant="light" size="xxl">
+                        hot dog DLP
+                      </Badge>
                     </Title>
                   </Link>
-                  <Menu shadow="md" width={250}>
-                    <Menu.Target>
-                      <UnstyledButton>
-                        <Badge color="red" variant="light" size="lg">
-                          {network as string}
-                        </Badge>
-                      </UnstyledButton>
-                    </Menu.Target>
-
-                    <Menu.Dropdown>
-                      <Menu.Label>Network</Menu.Label>
-                      {showInternalFeatures && <Menu.Item
-                        onClick={() => setNetwork("moksha")}
-                        leftSection={
-                          network === "moksha" && (
-                            <Icon icon="carbon:checkmark" />
-                          )
-                        }
-                      >
-                        Moksha Testnet
-                      </Menu.Item>}
-                      <Menu.Item
-                        onClick={() => setNetwork("satori")}
-                        leftSection={
-                          network === "satori" && (
-                            <Icon icon="carbon:checkmark" />
-                          )
-                        }
-                      >
-                        Satori Testnet
-                      </Menu.Item>
-                      <Menu.Item
-                        disabled
-                        onClick={() => setNetwork("mainnet")}
-                        leftSection={
-                          network === "mainnet" && (
-                            <Icon icon="carbon:checkmark" />
-                          )
-                        }
-                      >
-                        <Group flex="1" gap="xs">
-                          Vana Mainnet
-                          <Badge size="sm" variant="light" color="dark">
-                            Coming Soon
-                          </Badge>
-                        </Group>
-                      </Menu.Item>
-                    </Menu.Dropdown>
-                  </Menu>
                 </Flex>
 
                 <Group ml="lg" gap={0} visibleFrom="sm">
@@ -181,6 +134,55 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({
                   </Button>
                 )}
                 <SettingsButton />
+                <Menu shadow="md" width={250}>
+                  <Menu.Target>
+                    <UnstyledButton>
+                      <Badge color="green" variant="light" size="lg">
+                        {network as string}
+                      </Badge>
+                    </UnstyledButton>
+                  </Menu.Target>
+
+                  <Menu.Dropdown>
+                    <Menu.Label>Network</Menu.Label>
+                    {showInternalFeatures && <Menu.Item
+                      onClick={() => setNetwork("moksha")}
+                      leftSection={
+                        network === "moksha" && (
+                          <Icon icon="carbon:checkmark" />
+                        )
+                      }
+                    >
+                      Moksha Testnet
+                    </Menu.Item>}
+                    <Menu.Item
+                      onClick={() => setNetwork("satori")}
+                      leftSection={
+                        network === "satori" && (
+                          <Icon icon="carbon:checkmark" />
+                        )
+                      }
+                    >
+                      Satori Testnet
+                    </Menu.Item>
+                    <Menu.Item
+                      disabled
+                      onClick={() => setNetwork("mainnet")}
+                      leftSection={
+                        network === "mainnet" && (
+                          <Icon icon="carbon:checkmark" />
+                        )
+                      }
+                    >
+                      <Group flex="1" gap="xs">
+                        Vana Mainnet
+                        <Badge size="sm" variant="light" color="dark">
+                          Coming Soon
+                        </Badge>
+                      </Group>
+                    </Menu.Item>
+                  </Menu.Dropdown>
+                </Menu>
               </Group>
             </Group>
           </Group>
