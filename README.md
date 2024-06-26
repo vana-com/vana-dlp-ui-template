@@ -1,36 +1,27 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Vana DLP UI
+This is a generic UI for uploading data to a Data Liquidity Pool (DLP). This app does the following:
+1. Connect your EVM compatible wallet, which holds some $DAT
+2. On the upload page, log in to your Google Drive or Dropbox
+3. Drag your data in, which is encrypted client-side and stored in your personal storage
+4. A transaction is written on-chain, which the DLP validators will pick up on and verify your file
 
 ## Getting Started
-
-First, run the development server:
-
 ```bash
-npm run dev
-# or
+# First, install the dependencies
+yarn install
+
+# Copy .env.example to .env
+cp .env.example .env
+
+# Run the development server
 yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the app running.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Client-side encryption
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
+The Vana network strives to ensure personal data remains private, and is only shared with trusted parties. You can read more about how a DLP uses client-side encryption to protect user data [here](https://docs.vana.org/vana/core-concepts/key-elements/proof-of-contribution/data-privacy).
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+## Learn more
+You can find out more about building a data liquidity pool with Vana [here](https://docs.vana.org/vana/get-started/data-liquidity-layer/create-a-data-liquidity-pool-dlp#dlp-upload-ui). 
