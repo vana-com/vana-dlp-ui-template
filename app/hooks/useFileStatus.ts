@@ -8,53 +8,62 @@ export const useFileStatus = (fileId: number) => {
   const [reward, setReward] = useState(0);
   const [isClaimable, setIsClaimable] = useState(false);
   const [isClaiming, setIsClaiming] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const contractAddress = useNetworkStore((state) => state.contract);
   const walletAddress = useWalletStore((state) => state.walletAddress);
 
   useEffect(() => {
     const checkFileStatus = async () => {
-      if (!contractAddress || !walletAddress) return;
-
-      const provider = new ethers.BrowserProvider(window.ethereum);
-      const signer = await provider.getSigner();
-      const contract = new ethers.Contract(contractAddress, DataLiquidityPool.abi, signer);
+      if (!contractAddress || !walletAddress) {
+        setError("Wallet not connected or contract address not set");
+        return;
+      }
 
       try {
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const signer = await provider.getSigner();
+        const contract = new ethers.Contract(contractAddress, DataLiquidityPool.abi, signer);
+
         const fileInfo = await contract.files(fileId);
         setIsFinalized(fileInfo.finalized);
         setReward(parseInt(ethers.formatEther(fileInfo.reward)));
-        setIsClaimable(fileInfo.finalized && fileInfo.rewardWithdrawn === 0);
-      } catch (error) {
-        console.error("Error checking file status:", error);
+        setIsClaimable(fileInfo.finalized && fileInfo.rewardWithdrawn == 0);
+        setError(null);
+      } catch (err) {
+        console.error("Error checking file status:", err);
+        setError("Failed to check file status");
       }
     };
 
     checkFileStatus();
-    // Set up an interval to check the status periodically
-    const interval = setInterval(checkFileStatus, 30000); // Check every 30 seconds
-
+    const interval = setInterval(checkFileStatus, 30000);
     return () => clearInterval(interval);
   }, [fileId, contractAddress, walletAddress]);
 
   const claimReward = async () => {
-    if (!contractAddress || !walletAddress) return;
+    if (!contractAddress || !walletAddress) {
+      setError("Wallet not connected or contract address not set");
+      return;
+    }
 
     setIsClaiming(true);
-    const provider = new ethers.BrowserProvider(window.ethereum);
-    const signer = await provider.getSigner();
-    const contract = new ethers.Contract(contractAddress, DataLiquidityPool.abi, signer);
-
     try {
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      const contract = new ethers.Contract(contractAddress, DataLiquidityPool.abi, signer);
+
       const tx = await contract.claimContributionReward(fileId);
       await tx.wait();
       setIsClaimable(false);
-    } catch (error) {
-      console.error("Error claiming reward:", error);
+      setError(null);
+    } catch (err) {
+      console.error("Error claiming reward:", err);
+      setError("Failed to claim reward");
     } finally {
       setIsClaiming(false);
     }
   };
 
-  return { isFinalized, reward, isClaimable, isClaiming, claimReward };
+  return { isFinalized, reward, isClaimable, isClaiming, claimReward, error };
 };
