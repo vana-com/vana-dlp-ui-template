@@ -1,8 +1,12 @@
 import { Stack, Title, Box, Button, Text, Alert } from "@mantine/core";
 import { useFileStatus } from "@/app/hooks/useFileStatus";
 
-export const Success = ({ fileId }: { fileId: number }) => {
+export const Success = ({ fileId }: { fileId: number | null }) => {
   const { isFinalized, reward, isClaimable, isClaiming, claimReward, error } = useFileStatus(fileId);
+
+  if (fileId === null) {
+    return <Alert color="blue">Waiting for file upload to complete...</Alert>;
+  }
 
   return (
     <Stack gap="lg">

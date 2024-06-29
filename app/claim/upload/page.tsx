@@ -254,7 +254,7 @@ export default function Page() {
                 <UploadedFileState
                   fileName={uploadedFileMetadata.name ?? "encrypted_file"}
                   fileSize={uploadedFileMetadata.size ?? encryptedFile.size}
-                  fileId={uploadedFileMetadata.fileId as number}
+                  fileId={fileId}
                   onDownload={handleDownload}
                 />
               )}

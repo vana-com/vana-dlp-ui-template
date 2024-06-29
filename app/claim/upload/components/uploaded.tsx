@@ -1,7 +1,6 @@
-// TODO: De-hardcode token name and symbol
 import { ProviderLabel, useStorageStore } from "@/app/core";
 import { formatBytes } from "@/app/utils/formatters/bytes";
-import { Button, Grid, Stack, Text } from "@mantine/core";
+import { Button, Grid, Stack, Text, Alert } from "@mantine/core";
 import { useFileStatus } from "@/app/hooks/useFileStatus";
 
 export const UploadedFileState = ({
@@ -12,11 +11,11 @@ export const UploadedFileState = ({
 }: {
   fileName: string;
   fileSize: number;
-  fileId: number;
+  fileId: number | null;
   onDownload(): void;
 }) => {
   const provider = useStorageStore((store) => store.provider);
-  const { isFinalized, reward, isClaimable, isClaiming, claimReward } = useFileStatus(fileId);
+  const { isFinalized, reward, isClaimable, isClaiming, claimReward, error } = useFileStatus(fileId);
 
   return (
     <Grid
@@ -43,6 +42,11 @@ export const UploadedFileState = ({
             <Text size="xs">
               Reward: {reward} $DAT
             </Text>
+          )}
+          {error && (
+            <Alert color="red" mt={8}>
+              {error}
+            </Alert>
           )}
         </Stack>
       </Grid.Col>
