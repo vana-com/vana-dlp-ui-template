@@ -53,6 +53,7 @@ export default function Page() {
   const [uploadState, setUploadState] = useState<
     "initial" | "loading" | "done"
   >("initial");
+  const [fileId, setFileId] = useState<number | null>(null);
 
   const [uploadedFileMetadata, setUploadedFileMetadata] =
     useState<FileMetadata | null>(null);
@@ -162,10 +163,21 @@ export default function Page() {
       // Get base64 encoded signature
       const encryptedKey = btoa(encryptedSignature as string);
       const tx = await contract.addFile(shareUrl, encryptedKey);
-      await tx.wait();
-      console.log(`Share url added to the smart contract`);
+      const receipt = await tx.wait();
+
+      console.log("File added, transaction receipt:", receipt.hash);
+
+      // Get file id from receipt transaction log
+      const log = receipt.logs[0];
+      const fileId = BigInt(log.data);
+      console.log("File ID:", fileId);
+      setFileId(Number(fileId));
+
+      setUploadState("done");
+
+      console.log(`File uploaded with ID: ${fileId}`);
     } catch (error) {
-      console.error("Error encrypting file:", error);
+      console.error("Error encrypting and uploading file:", error);
       setUploadState("initial");
       handleError();
     }
@@ -245,10 +257,11 @@ export default function Page() {
                 <UploadingState fileName={file.name} fileSize={file.size} />
               )}
 
-              {uploadState === "done" && encryptedFile && (
+              {uploadState === "done" && encryptedFile && uploadedFileMetadata && (
                 <UploadedFileState
-                  fileName={uploadedFileMetadata?.name ?? "encrypted_file"}
-                  fileSize={uploadedFileMetadata?.size ?? encryptedFile.size}
+                  fileName={uploadedFileMetadata.name ?? "encrypted_file"}
+                  fileSize={uploadedFileMetadata.size ?? encryptedFile.size}
+                  fileId={uploadedFileMetadata.fileId as number}
                   onDownload={handleDownload}
                 />
               )}
@@ -260,7 +273,9 @@ export default function Page() {
                 </Notification>
               </Dialog>
 
-              {encryptedFile && <Success />}
+              {uploadState === "done" && fileId && (
+                <Success fileId={fileId} />
+              )}
             </Stack>
           </Grid.Col>
         </Grid>
