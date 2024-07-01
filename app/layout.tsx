@@ -11,9 +11,9 @@ import "./globals.css";
 import Providers from "./providers";
 
 export const metadata: Metadata = {
-  title: "GPT DATA DAO",
+  title: "YOUR DATA DAO",
   description:
-    "Join with your chatGPT account and receive governance rights. Vote to sell the data to other AI companies, or vote to delete it if OpenAI open sources GPT-4",
+    "Join with your data and receive governance rights. Vote to sell the data to AI companies, or vote to delete it if the data provider open sources their models.",
 };
 
 export default function RootLayout({
