@@ -17,7 +17,7 @@ export const Success = ({ fileId }: { fileId: number | null }) => {
       )}
       <Box className="border-2" style={{ borderColor: "var(--mantine-color-brand-3-text)" }}>
         <Stack gap={0} align="center" p="lg" bg="brand-5">
-          <Title order={5}>{isFinalized ? `${reward} $DAT` : 'Verification in progress'}</Title>
+          <Title order={5}>{isFinalized ? `${reward} tokens` : 'Verification in progress'}</Title>
           <Text>{isFinalized ? 'available for claim' : 'Please wait for verification'}</Text>
         </Stack>
       </Box>

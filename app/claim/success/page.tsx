@@ -39,8 +39,8 @@ export default function Page() {
               </Text>
               <Box>
                 <Stack gap={0} align="center" p="lg" bg="brand-5">
-                  <Title order={5}>15,000 $GPTDAT</Title>
-                  {/* <Text>available for claim</Text> */}
+                  <Title order={5}>15,000 tokens</Title>
+                  {/*<Text>available for claim</Text> */}
                 </Stack>
               </Box>
               <Button fullWidth color="brand-3" disabled>

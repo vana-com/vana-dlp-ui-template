@@ -40,7 +40,7 @@ export const UploadedFileState = ({
           </Text>
           {isFinalized && (
             <Text size="xs">
-              Reward: {reward} $DAT
+              Reward: {reward} tokens
             </Text>
           )}
           {error && (
