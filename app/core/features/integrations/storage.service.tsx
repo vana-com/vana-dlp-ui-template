@@ -11,6 +11,7 @@ export type FileMetadata = {
   name: string;
   size: number;
   modifiedTime?: string;
+  fileId?: number;
 };
 
 export const uploadFile = async (

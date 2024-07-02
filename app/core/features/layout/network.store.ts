@@ -47,7 +47,7 @@ export const useNetworkStore = create<NetworkState>()(
         chainName: defaultNetworkConfig.chainName,
         explorerUrl: defaultNetworkConfig.explorerUrl,
         currency: defaultNetworkConfig.currency,
-      };
+      }
     },
     {
       name: "network-storage",
