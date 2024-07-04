@@ -24,13 +24,20 @@ import { usePathname } from "next/navigation";
 import { useEffect } from "react";
 import { SettingsButton } from "./settings-button";
 
-const links: { title: string; href: string }[] = [];
+const links = [
+  { title: "Claim", href: "/claim" },
+  { title: "About", href: "/terms" },
+];
 
 export const Layout: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const network = useNetworkStore((state) => state.network);
   const setNetwork = useNetworkStore((state) => state.setNetwork);
+
+  useEffect(() => {
+    useNetworkStore.persist.rehydrate();
+  }, []);
 
   const [sidebarOpened, { toggle: toggleSidebar }] = useDisclosure();
   const walletAddress = useWalletStore((state) => state.walletAddress);
@@ -211,7 +218,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({
         </Stack>
       </AppShell.Navbar>
 
-      <AppShell.Main mt={60}>{children}</AppShell.Main>
+      <AppShell.Main mt={40}>{children}</AppShell.Main>
     </AppShell>
   );
 };

@@ -51,6 +51,14 @@ export const useNetworkStore = create<NetworkState>()(
     },
     {
       name: "network-storage",
+      onRehydrateStorage: (state) => {
+        console.log(state.contract);
+        if (!state.contract) {
+          state.setContract(defaultNetworkConfig.contract);
+        }
+
+        // return state;
+      },
       // We could include only specific fields to be persisted if necessary
       // partialize: state => ({
       //   network: state.network,
