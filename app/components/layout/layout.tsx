@@ -11,20 +11,20 @@ import {
   Container,
   Flex,
   Group,
-  Image,
   Menu,
   SelectProps,
   Stack,
   Text,
+  Title,
   UnstyledButton,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect } from "react";
+import { SettingsButton } from "./settings-button";
 
 const links = [
-  { title: "Leaderboard", href: "/leaderboard" },
   { title: "Claim", href: "/claim" },
   { title: "About", href: "/terms" },
 ];
@@ -98,7 +98,9 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({
 
                 <Flex pos="relative" dir="row" align="center" gap="sm">
                   <Link href="/">
-                    <Image radius="md" src="/images/logo.svg" />
+                    <Title order={5} ff="monospace">
+                      DataDAO
+                    </Title>
                   </Link>
                   <Menu shadow="md" width={250}>
                     <Menu.Target>
@@ -111,18 +113,16 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({
 
                     <Menu.Dropdown>
                       <Menu.Label>Network</Menu.Label>
-                      {showInternalFeatures && (
-                        <Menu.Item
-                          onClick={() => setNetwork("moksha")}
-                          leftSection={
-                            network === "moksha" && (
-                              <Icon icon="carbon:checkmark" />
-                            )
-                          }
-                        >
-                          Moksha Testnet
-                        </Menu.Item>
-                      )}
+                      {showInternalFeatures && <Menu.Item
+                        onClick={() => setNetwork("moksha")}
+                        leftSection={
+                          network === "moksha" && (
+                            <Icon icon="carbon:checkmark" />
+                          )
+                        }
+                      >
+                        Moksha Testnet
+                      </Menu.Item>}
                       <Menu.Item
                         onClick={() => setNetwork("satori")}
                         leftSection={
@@ -188,6 +188,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({
                     Connect
                   </Button>
                 )}
+                <SettingsButton />
               </Group>
             </Group>
           </Group>

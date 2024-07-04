@@ -26,15 +26,15 @@ const instructions = [
   },
   {
     number: 2,
-    title: "Chat GPT prompts",
+    title: "Follow Your DLP's instructions",
     description:
-      "Open a new chat in ChatGPT, paste your wallet address into the message box, and send it.",
+      "For example, a ChatGPT DLP may ask you to open a new chat in ChatGPT, paste your wallet address into the message box, and send it. Then, request a download of your ChatGPT data.",
   },
   {
     number: 3,
     title: "Upload data and claim points",
     description:
-      "Request a download of your ChatGPT data by following the provided instructions, then upload it here to claim your points",
+      "Submit a data upload transaction here to claim your points",
   },
 ];
 

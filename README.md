@@ -1,5 +1,5 @@
-# Vana ChatGPT DLP UI
-This is the ChatGPT UI for uploading data to a Data Liquidity Pool (DLP). This app does the following:
+# Vana DLP UI
+This is a generic UI for uploading data to a Data Liquidity Pool (DLP). This app does the following:
 1. Connect your EVM compatible wallet, which holds some $DAT
 2. On the upload page, log in to your Google Drive or Dropbox
 3. Drag your data in, which is encrypted client-side and stored in your personal storage

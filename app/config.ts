@@ -37,8 +37,6 @@ if (!networkConfig) {
   networks[network] = networkConfig;
 }
 
-console.log(networkConfig);
-
 networkConfig.contract = process.env.NEXT_PUBLIC_SMART_CONTRACT_ADDRESS || networkConfig.contract;
 networkConfig.rpcUrl = process.env.NEXT_PUBLIC_RPC_URL || networkConfig.rpcUrl;
 networkConfig.chainName = process.env.NEXT_PUBLIC_CHAIN_NAME || networkConfig.chainName;
@@ -48,8 +46,8 @@ networkConfig.currency = process.env.NEXT_PUBLIC_CURRENCY || networkConfig.curre
 const config = {
   dropboxCallbackUrl: process.env.NEXT_PUBLIC_DROPBOX_CALLBACK_URL || "",
   dropboxClientId: process.env.NEXT_PUBLIC_DROPBOX_CLIENT_ID || "",
-  dropboxFolderName: "gpt-dao",
-  googleDriveFolderName: "gpt-dao",
+  dropboxFolderName: "data-dao",
+  googleDriveFolderName: "data-dao",
   googleClientId: process.env.NEXT_PUBLIC_GOOGLE_DRIVE_CLIENT_ID || "",
 
   publicKeyBase64: process.env.NEXT_PUBLIC_FILE_ENCRYPTION_PUBLIC_KEY_BASE64 || "",
