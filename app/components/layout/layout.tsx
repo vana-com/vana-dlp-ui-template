@@ -7,6 +7,7 @@ import {
   Badge,
   Burger,
   Button,
+  Center,
   Container,
   Flex,
   Group,
@@ -191,6 +192,10 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({
             </Group>
           </Group>
         </Container>
+
+        <Center p={"xs"} bg="var(--mantine-color-red-9)">
+          <Text fs={"sm"} c={"white"}>THIS IS A TESTNET. POINTS EARNED ON TESTNET HOLD NO VALUE AND ARE NOT INDICATIVE OF A FUTURE AIRDROP.</Text>
+        </Center>
       </AppShell.Header>
 
       <AppShell.Navbar p="md">
@@ -212,7 +217,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({
         </Stack>
       </AppShell.Navbar>
 
-      <AppShell.Main>{children}</AppShell.Main>
+      <AppShell.Main mt={40}>{children}</AppShell.Main>
     </AppShell>
   );
 };

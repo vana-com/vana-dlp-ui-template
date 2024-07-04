@@ -32,7 +32,7 @@ const instructions = [
   },
   {
     number: 3,
-    title: "Download data and claim points",
+    title: "Upload data and claim points",
     description:
       "Request a download of your ChatGPT data by following the provided instructions, then upload it here to claim your points",
   },
