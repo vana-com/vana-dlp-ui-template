@@ -1,6 +1,6 @@
 # Vana DLP UI
 This is a generic UI for uploading data to a Data Liquidity Pool (DLP). This app does the following:
-1. Connect your EVM compatible wallet, which holds some $DAT
+1. Connect your EVM compatible wallet, which holds some $VANA
 2. On the upload page, log in to your Google Drive or Dropbox
 3. Drag your data in, which is encrypted client-side and stored in your personal storage
 4. A transaction is written on-chain, which the DLP validators will pick up on and verify your file
