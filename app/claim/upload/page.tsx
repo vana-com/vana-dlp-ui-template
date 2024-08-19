@@ -2,7 +2,7 @@
 
 import {
   FileMetadata,
-  getShareLink,
+  getEncryptedDataUrl,
   signMessage,
   uploadFile,
   useConnectWallet,
@@ -31,6 +31,8 @@ import { ethers } from "ethers";
 import * as openpgp from "openpgp";
 import { useEffect, useRef, useState } from "react";
 import DataLiquidityPool from "./../../contracts/DataLiquidityPool.json";
+import TeePoolImplementation from "./../../contracts/TeePoolImplementation.json";
+import DataRegistryImplementation from "@/app/contracts/DataRegistryImplementation.json";
 import { ConnectStep } from "./components/connect";
 import { Success } from "./components/success";
 import { UploadState } from "./components/upload";
@@ -118,15 +120,14 @@ export default function Page() {
       );
 
       // Get shareUrl to file in storage
-      const shareUrl = await getShareLink(
+      const encryptedDataUrl = await getEncryptedDataUrl(
         dropboxToken,
         uploadedFileMetadata.id,
         storageProvider
       );
+      console.log("encryptedDataUrl:", encryptedDataUrl);
 
-      console.log("Share url:", shareUrl);
-
-      setShareUrl(shareUrl);
+      setShareUrl(encryptedDataUrl);
 
       setUploadedFileMetadata(uploadedFileMetadata);
 
@@ -153,16 +154,18 @@ export default function Page() {
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
 
-      const contractABI = [...DataLiquidityPool.abi];
-      const contract = new ethers.Contract(
+      // Initialize contracts
+      const dataRegistryContractABI = [...DataRegistryImplementation.abi];
+      const dataRegsitryContract = new ethers.Contract(
         contractAddress as string,
-        contractABI,
+        dataRegistryContractABI,
         signer
       );
 
       // Get base64 encoded signature
       const encryptedKey = btoa(encryptedSignature as string);
-      const tx = await contract.addFile(shareUrl, encryptedKey);
+
+      const tx = await dataRegsitryContract.addFile(encryptedDataUrl);
       const receipt = await tx.wait();
 
       console.log("File added, transaction receipt:", receipt.hash);
@@ -176,6 +179,32 @@ export default function Page() {
       setUploadState("done");
 
       console.log(`File uploaded with ID: ${fileId}`);
+
+      // TEE Proof
+      const teePoolContractABI = [...TeePoolImplementation.abi];
+      const teePoolContract = new ethers.Contract(
+        contractAddress as string,
+        teePoolContractABI,
+        signer
+      );
+      const teeFee = await teePoolContract.teeFee();
+      console.log("TEE Fee:", teeFee.toString());
+
+      // Request contribution proof
+      const contributionProof = await teePoolContract.requestContributionProof(fileId);
+      console.log("Contribution proof:", contributionProof);
+
+      // TODO: Assign round-robin TEE
+      const activeTees = await teePoolContract.getActiveTees();
+      console.log("Active TEEs:", activeTees);
+
+      // TODO: Get attestation from TEE
+      // Send GET request to TEE /attestation endpoint
+
+      // TODO: Verify TEE attestation and safety
+
+      // TODO: Send POST request to TEE /contribution-proofs endpoint with fileId and encryptedFileKey
+
     } catch (error) {
       console.error("Error encrypting and uploading file:", error);
       setUploadState("initial");

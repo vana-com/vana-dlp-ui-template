@@ -47,7 +47,7 @@ export const uploadFile = async (
   }
 };
 
-export const getShareLink = (
+export const getEncryptedDataUrl = (
   token: string,
   id: string,
   provider: StorageProvider
