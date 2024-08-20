@@ -46,6 +46,8 @@ export default function Page() {
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const storageProvider = useStorageStore((state) => state.provider);
   const contractAddress = useNetworkStore((state) => state.contract);
+  const dataRegistryContractAddress = useNetworkStore((state) => state.dataRegistryContract);
+  const teePoolContractAddress = useNetworkStore((state) => state.teePoolContract);
   const dropboxToken = useStorageStore((state) => state.token);
   const publicKeyBase64 = useNetworkStore((state) => state.publicKeyBase64);
   const isDropboxConnected = !!dropboxToken;
@@ -157,7 +159,7 @@ export default function Page() {
       // Initialize contracts
       const dataRegistryContractABI = [...DataRegistryImplementation.abi];
       const dataRegsitryContract = new ethers.Contract(
-        contractAddress as string,
+        dataRegistryContractAddress as string,
         dataRegistryContractABI,
         signer
       );
@@ -172,18 +174,17 @@ export default function Page() {
 
       // Get file id from receipt transaction log
       const log = receipt.logs[0];
-      const fileId = BigInt(log.data);
+      const fileId = Number(log.args[0])
       console.log("File ID:", fileId);
-      setFileId(Number(fileId));
+      setFileId(fileId);
 
       setUploadState("done");
-
       console.log(`File uploaded with ID: ${fileId}`);
 
       // TEE Proof
       const teePoolContractABI = [...TeePoolImplementation.abi];
       const teePoolContract = new ethers.Contract(
-        contractAddress as string,
+        teePoolContractAddress as string,
         teePoolContractABI,
         signer
       );
