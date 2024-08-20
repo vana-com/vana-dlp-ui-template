@@ -1,7 +1,7 @@
 import { useNetworkStore, useWalletStore } from "@/app/core";
 import { ethers } from "ethers";
 import { useState, useEffect, useCallback } from "react";
-import DataLiquidityPool from "@/app/contracts/DataLiquidityPool.json";
+import DataLiquidityPoolLightImplementation from "@/app/contracts/DataLiquidityPoolLightImplementation.json";
 
 export const useFileStatus = (fileId: number | null) => {
   const [isFinalized, setIsFinalized] = useState(false);
@@ -22,7 +22,7 @@ export const useFileStatus = (fileId: number | null) => {
     try {
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
-      const contract = new ethers.Contract(contractAddress, DataLiquidityPool.abi, signer);
+      const contract = new ethers.Contract(contractAddress, DataLiquidityPoolLightImplementation.abi, signer);
 
       const fileInfo = await contract.files(fileId);
       setIsFinalized(fileInfo.finalized);
@@ -53,7 +53,7 @@ export const useFileStatus = (fileId: number | null) => {
     try {
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
-      const contract = new ethers.Contract(contractAddress, DataLiquidityPool.abi, signer);
+      const contract = new ethers.Contract(contractAddress, DataLiquidityPoolLightImplementation.abi, signer);
 
       const tx = await contract.claimContributionReward(fileId);
       await tx.wait();
