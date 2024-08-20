@@ -30,7 +30,7 @@ import Autoplay from "embla-carousel-autoplay";
 import { ethers } from "ethers";
 import * as openpgp from "openpgp";
 import { useEffect, useRef, useState } from "react";
-import DataLiquidityPool from "./../../contracts/DataLiquidityPool.json";
+import DataLiquidityPool from "./../../contracts/DataLiquidityPoolLightImplementation.json";
 import TeePoolImplementation from "./../../contracts/TeePoolImplementation.json";
 import DataRegistryImplementation from "@/app/contracts/DataRegistryImplementation.json";
 import { ConnectStep } from "./components/connect";
@@ -156,7 +156,7 @@ export default function Page() {
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
 
-      // Initialize contracts
+      // Initialize DataRegistry contract
       const dataRegistryContractABI = [...DataRegistryImplementation.abi];
       const dataRegsitryContract = new ethers.Contract(
         dataRegistryContractAddress as string,
@@ -205,6 +205,16 @@ export default function Page() {
       // TODO: Verify TEE attestation and safety
 
       // TODO: Send POST request to TEE /contribution-proofs endpoint with fileId and encryptedFileKey
+
+      // DLP contribution
+      // Initialize DLP liquidity pool contract
+      const contractABI = [...DataLiquidityPool.abi];
+      const contract = new ethers.Contract(
+        contractAddress as string,
+        contractABI,
+        signer
+      );
+
 
     } catch (error) {
       console.error("Error encrypting and uploading file:", error);
