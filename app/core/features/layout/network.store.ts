@@ -9,7 +9,12 @@ type NetworkState = {
   setNetwork: (network: Network) => void;
 
   contract: string;
+  dataRegistryContract: string;
+  teePoolContract: string;
+
   setContract: (contract: string) => void;
+  setDataRegistryContract: (dataRegistryContract: string) => void;
+  setTeePoolContract: (teePoolContract: string) => void;
 
   publicKeyBase64: string;
   setPublicKeyBase64: (publicKeyBase64: string) => void;
@@ -37,7 +42,11 @@ export const useNetworkStore = create<NetworkState>()(
         },
 
         contract: defaultNetworkConfig.contract,
+        dataRegistryContract: defaultNetworkConfig.dataRegistryContract,
+        teePoolContract: defaultNetworkConfig.teePoolContract,
         setContract: (contract) => set({ contract }),
+        setTeePoolContract: (teePoolContract) => set({ teePoolContract }),
+        setDataRegistryContract: (dataRegistryContract) => set({ dataRegistryContract }),
 
         publicKeyBase64: config.publicKeyBase64,
         setPublicKeyBase64: (publicKeyBase64) => set({ publicKeyBase64 }),

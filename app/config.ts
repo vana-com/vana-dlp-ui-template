@@ -44,6 +44,8 @@ if (!networkConfig) {
 }
 
 networkConfig.contract = process.env.NEXT_PUBLIC_SMART_CONTRACT_ADDRESS || networkConfig.contract;
+networkConfig.dataRegistryContract = process.env.NEXT_PUBLIC_SMART_CONTRACT_ADDRESS_DATA_REGISTRY || networkConfig.dataRegistryContract;
+networkConfig.teePoolContract = process.env.NEXT_PUBLIC_SMART_CONTRACT_ADDRESS_TEE_POOL || networkConfig.teePoolContract;
 networkConfig.rpcUrl = process.env.NEXT_PUBLIC_RPC_URL || networkConfig.rpcUrl;
 networkConfig.chainName = process.env.NEXT_PUBLIC_CHAIN_NAME || networkConfig.chainName;
 networkConfig.explorerUrl = process.env.NEXT_PUBLIC_EXPLORER_URL || networkConfig.explorerUrl;
