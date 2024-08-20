@@ -6,6 +6,8 @@ const networks = {
     explorerUrl: "https://moksha.vanascan.io",
     currency: "VANA",
     contract: process.env.NEXT_PUBLIC_SMART_CONTRACT_ADDRESS_MOKSHA_TESTNET || "moksha",
+    dataRegistryContract: process.env.NEXT_PUBLIC_SMART_CONTRACT_ADDRESS_DATA_REGISTRY_MOKSHA_TESTNET || "data_registry",
+    teePoolContract: process.env.NEXT_PUBLIC_SMART_CONTRACT_ADDRESS_TEE_POOL_MOKSHA_TESTNET || "tee_pool",
   },
   satori: {
     chainId: "14801",
@@ -14,6 +16,8 @@ const networks = {
     explorerUrl: "https://satori.vanascan.io",
     currency: "VANA",
     contract: process.env.NEXT_PUBLIC_SMART_CONTRACT_ADDRESS_SATORI_TESTNET || "satori",
+    dataRegistryContract: process.env.NEXT_PUBLIC_SMART_CONTRACT_ADDRESS_DATA_REGISTRY || "0xDAAD102189FE8D0FE43c1926b109E94D06bD8a97",
+    teePoolContract: process.env.NEXT_PUBLIC_SMART_CONTRACT_ADDRESS_TEE_POOL || "0x88790ffF10E952ffc13Be22a442616eAfE081594",
   },
   mainnet: {
     chainId: "1480",
@@ -22,6 +26,8 @@ const networks = {
     explorerUrl: "https://vanascan.io",
     currency: "VANA",
     contract: process.env.NEXT_PUBLIC_SMART_CONTRACT_ADDRESS_MAINNET || "",
+    dataRegistryContract: process.env.NEXT_PUBLIC_SMART_CONTRACT_ADDRESS_DATA_REGISTRY_MAINNET || "",
+    teePoolContract: process.env.NEXT_PUBLIC_SMART_CONTRACT_ADDRESS_TEE_POOL_MAINNET || "",
   },
 }
 
