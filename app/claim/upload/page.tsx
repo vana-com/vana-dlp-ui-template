@@ -196,7 +196,7 @@ export default function Page() {
       console.log("Contribution proof:", contributionProof);
 
       // TODO: Assign round-robin TEE
-      const activeTees = await teePoolContract.getActiveTees();
+      const activeTees = await teePoolContract.activeTeeList();
       console.log("Active TEEs:", activeTees);
 
       // TODO: Get attestation from TEE
@@ -209,12 +209,24 @@ export default function Page() {
       // DLP contribution
       // Initialize DLP liquidity pool contract
       const contractABI = [...DataLiquidityPool.abi];
-      const contract = new ethers.Contract(
+      const dlpLightContract = new ethers.Contract(
         contractAddress as string,
         contractABI,
         signer
       );
 
+      // Authorize
+      const authorizeTx = await dlpLightContract.authorize(fileId);
+      await authorizeTx.wait();
+      console.log("File authorized");
+
+      // RequestClaim
+      const requestClaimTx = await dlpLightContract.requestClaim(fileId);
+      await requestClaimTx.wait();
+
+      // getFile
+      const fileData = await dlpLightContract.getFile(fileId);
+      console.log("File data:", fileData);
 
     } catch (error) {
       console.error("Error encrypting and uploading file:", error);
