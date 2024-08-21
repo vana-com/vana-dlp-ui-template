@@ -79,24 +79,28 @@ export default function Page() {
   const [teeDetails, setTeeDetails] = useState<any | null>(null);
   const eventListenerRef = useRef<JobSubmittedListener | null>(null);
 
-  const listenForJobSubmittedEvent = (teePoolContract: ethers.Contract) => {
-    // Remove previous listener if it exists
-    if (eventListenerRef.current) {
-      teePoolContract.off("JobSubmitted", eventListenerRef.current);
-    }
+  const listenForJobSubmittedEvent = (teePoolContract: ethers.Contract): Promise<any> => {
+    return new Promise((resolve) => {
+      // Remove previous listener if it exists
+      if (eventListenerRef.current) {
+        teePoolContract.off("JobSubmitted", eventListenerRef.current);
+      }
 
-    // Create new listener
-    const listener: JobSubmittedListener = (jobId, fileId, bidAmount, event) => {
-      console.log(`New job submitted: JobID ${jobId}, FileID ${fileId}, Bid Amount ${bidAmount}`);
-      setJobId(Number(jobId));
-      getTeeDetails(teePoolContract, Number(jobId));
-    };
+      // Create new listener
+      const listener: JobSubmittedListener = async (jobId, fileId, bidAmount, event) => {
+        console.log(`New job submitted: JobID ${jobId}, FileID ${fileId}, Bid Amount ${bidAmount}`);
+        const jobIdNumber = Number(jobId);
+        setJobId(jobIdNumber);
+        const details = await getTeeDetails(teePoolContract, jobIdNumber);
+        resolve(details);
+      };
 
-    // Set up the event listener
-    teePoolContract.on("JobSubmitted", listener);
+      // Set up the event listener
+      teePoolContract.on("JobSubmitted", listener);
 
-    // Store the listener reference for future cleanup
-    eventListenerRef.current = listener;
+      // Store the listener reference for future cleanup
+      eventListenerRef.current = listener;
+    });
   };
 
   const getTeeDetails = async (teePoolContract: ethers.Contract, jobId: number) => {
@@ -104,6 +108,7 @@ export default function Page() {
       const details = await teePoolContract.jobTee(jobId);
       setTeeDetails(details);
       console.log("TEE Details:", details);
+      return details;
     } catch (error) {
       console.error("Error fetching TEE details:", error);
       notifications.show({
@@ -111,6 +116,7 @@ export default function Page() {
         title: "Error",
         message: "Failed to fetch TEE details. Please try again.",
       });
+      throw error;
     }
   };
 
@@ -230,6 +236,7 @@ export default function Page() {
       // Get base64 encoded signature
       const encryptedKey = btoa(encryptedSignature as string);
 
+      // User adds file to the DataRegistry contract by calling addFile(encryptedDataUrl)
       const tx = await dataRegsitryContract.addFile(encryptedDataUrl);
       const receipt = await tx.wait();
       console.log("File added, transaction receipt:", receipt.hash);
@@ -248,37 +255,45 @@ export default function Page() {
       console.log("TEE Fee:", teeFee.toString());
 
       // Start listening for JobSubmitted event
-      // User listens for the JobSubmitted event which is emitted during requestContributionProof call
-      // Once event received user gets latest jobId and calls jobTeed(uint256 jobId) to get a TEE details
-      // TeeDetails({
-      //     teeAddress: teeAddress,
-      //     url: _tees[teeAddress].url,
-      //     status: _tees[teeAddress].status,
-      //     amount: _tees[teeAddress].amount,
-      //     withdrawnAmount: _tees[teeAddress].withdrawnAmount
-      // });
-      listenForJobSubmittedEvent(teePoolContract);
+      const teeDetailsPromise = listenForJobSubmittedEvent(teePoolContract);
 
       // Request contribution proof from a TEE. This starts the validation process on the TEE
       const contributionProofTx = await teePoolContract.requestContributionProof(fileId, { value: teeFee });
       await contributionProofTx.wait();
       console.log("Contribution proof requested");
 
+      // Wait for the TEE details to be received
+      const teeDetails = await teeDetailsPromise as any;
+
       // Once user gets TeeDetails, user can send a GET request to the /attestation endpoint of the TEE to get the attestation using url from TeeDetails
-      // User Get attestation from TEE by Sending GET request to TEE /attestation endpoint
       console.log("TEE Details:", teeDetails);
       console.log("TODO: Implement query to TEE Attestation URL:", teeDetails.url);
 
-      // User Verify TEE attestation and safety retrieved from the GET call above
-      // User Sends POST request to TEE /contribution-proofs endpoint with fileId and encryptedFileKey
-      console.log(`TODO: Implement POST request to TEE /contribution-proofs endpoint with fileId ${fileId} and encryptedFileKey ${encryptedKey}`);
+      // Implement the GET request to the TEE attestation endpoint
+      console.log(`TODO: Implement GET request to TEE attestation endpoint ${teeDetails.url}/attestation`);
+      // const attestationResponse = await fetch(`${teeDetails.url}/attestation`);
+      // const attestationData = await attestationResponse.json();
+      // console.log("Attestation data:", attestationData);
 
-      // TEE will get file from data registry and use encryptedFileKey to decrypt the file, after that TEE will generate a proof
-      // After that TEE will call claimFeeAndAddProof(fileId, proof, proofOfExecution) on the TEE Pool contract
-      // TEE Pool contract will verify execution proof and if it's correct, it will pay the TEE and add the proof to the file on the DataRegistry contract by calling addProof(fileId, tee_proof)
+      // User Verify TEE attestation and safety retrieved from the GET call above
+      // TODO: Implement attestation verification logic here
+
+      // User Sends POST request to TEE /contribution-proofs endpoint with fileId and encryptedFileKey
+      console.log(`TODO: Implement Sending contribution proof to TEE ${teeDetails.url}/contribution-proofs`);
+      // const contributionProofResponse = await fetch(`${teeDetails.url}/contribution-proofs`, {
+      //   method: 'POST',
+      //   headers: {
+      //     'Content-Type': 'application/json',
+      //   },
+      //   body: JSON.stringify({
+      //     fileId: fileId,
+      //     encryptedFileKey: encryptedKey,
+      //   }),
+      // });
+      // const contributionProofData = await contributionProofResponse.json();
+      // console.log("Contribution proof response:", contributionProofData);
 
       // User now authorize DLPLight contract to access the file data by calling addFilePermission(fileId, walletAddress, encryptedKey)
-      // User authorizes an address(es) to decrypt their file by encrypting their file encryption key with the address’s public key
       const authorizeTx = await dataRegsitryContract.addFilePermission(fileId, contractAddress, encryptedKey);
       await authorizeTx.wait();
       console.log(`File permission added for contract ${contractAddress}`);
@@ -286,6 +301,9 @@ export default function Page() {
       // After that user calls requestClaim(fileId) on the DLP contract to request the claim
       const requestClaimTx = await dlpLightContract.requestClaim(fileId);
       await requestClaimTx.wait();
+      console.log("Claim requested successfully");
+
+      setUploadState("done");
 
       // DLP contract will get the file from the DataRegistry contract by calling getFile(fileId) and get back encryptedDataUrl, encryptedKey and proof
       // DLP contract decrypts the file using the encryptedKey and verifies the proof and file hash and calculates the reward
