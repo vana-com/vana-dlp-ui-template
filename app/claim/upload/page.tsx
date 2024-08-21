@@ -42,6 +42,13 @@ import { Disclaimer } from "../components/disclaimer";
 
 const FIXED_MESSAGE = "Please sign to retrieve your encryption key";
 
+type JobSubmittedListener = (
+  jobId: ethers.BigNumberish,
+  fileId: ethers.BigNumberish,
+  bidAmount: ethers.BigNumberish,
+  event: any
+) => void;
+
 export default function Page() {
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const storageProvider = useStorageStore((state) => state.provider);
@@ -67,6 +74,45 @@ export default function Page() {
 
   const [file, setFile] = useState<File | null>(null);
   const [encryptedFile, setEncryptedFile] = useState<Blob | null>(null);
+
+  const [jobId, setJobId] = useState<number | null>(null);
+  const [teeDetails, setTeeDetails] = useState<any | null>(null);
+  const eventListenerRef = useRef<JobSubmittedListener | null>(null);
+
+  const listenForJobSubmittedEvent = (teePoolContract: ethers.Contract) => {
+    // Remove previous listener if it exists
+    if (eventListenerRef.current) {
+      teePoolContract.off("JobSubmitted", eventListenerRef.current);
+    }
+
+    // Create new listener
+    const listener: JobSubmittedListener = (jobId, fileId, bidAmount, event) => {
+      console.log(`New job submitted: JobID ${jobId}, FileID ${fileId}, Bid Amount ${bidAmount}`);
+      setJobId(Number(jobId));
+      getTeeDetails(teePoolContract, Number(jobId));
+    };
+
+    // Set up the event listener
+    teePoolContract.on("JobSubmitted", listener);
+
+    // Store the listener reference for future cleanup
+    eventListenerRef.current = listener;
+  };
+
+  const getTeeDetails = async (teePoolContract: ethers.Contract, jobId: number) => {
+    try {
+      const details = await teePoolContract.jobTee(jobId);
+      setTeeDetails(details);
+      console.log("TEE Details:", details);
+    } catch (error) {
+      console.error("Error fetching TEE details:", error);
+      notifications.show({
+        color: "red",
+        title: "Error",
+        message: "Failed to fetch TEE details. Please try again.",
+      });
+    }
+  };
 
   const handleError = () => {
     notifications.show({
@@ -153,14 +199,31 @@ export default function Page() {
 
       setUploadState("done");
 
+      // Initialize contracts
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
 
-      // Initialize DataRegistry contract
+      // DLP light contract
+      const contractABI = [...DataLiquidityPool.abi];
+      const dlpLightContract = new ethers.Contract(
+        contractAddress as string,
+        contractABI,
+        signer
+      );
+
+      // Data Registry contract
       const dataRegistryContractABI = [...DataRegistryImplementation.abi];
       const dataRegsitryContract = new ethers.Contract(
-        dataRegistryContractAddress as string,
+        dataRegistryContractAddress,
         dataRegistryContractABI,
+        signer
+      );
+
+      // TEE Pool contract
+      const teePoolContractABI = [...TeePoolImplementation.abi];
+      const teePoolContract = new ethers.Contract(
+        teePoolContractAddress,
+        teePoolContractABI,
         signer
       );
 
@@ -169,7 +232,6 @@ export default function Page() {
 
       const tx = await dataRegsitryContract.addFile(encryptedDataUrl);
       const receipt = await tx.wait();
-
       console.log("File added, transaction receipt:", receipt.hash);
 
       // Get file id from receipt transaction log
@@ -182,22 +244,12 @@ export default function Page() {
       console.log(`File uploaded with ID: ${fileId}`);
 
       // TEE Proof
-      const teePoolContractABI = [...TeePoolImplementation.abi];
-      const teePoolContract = new ethers.Contract(
-        teePoolContractAddress as string,
-        teePoolContractABI,
-        signer
-      );
       const teeFee = await teePoolContract.teeFee();
       console.log("TEE Fee:", teeFee.toString());
 
-      // Request contribution proof from a TEE. This starts the validation process on the TEE
-      const contributionProof = await teePoolContract.requestContributionProof(fileId);
-      console.log("Contribution proof:", contributionProof);
-
+      // Start listening for JobSubmitted event
       // User listens for the JobSubmitted event which is emitted during requestContributionProof call
       // Once event received user gets latest jobId and calls jobTeed(uint256 jobId) to get a TEE details
-
       // TeeDetails({
       //     teeAddress: teeAddress,
       //     url: _tees[teeAddress].url,
@@ -205,65 +257,39 @@ export default function Page() {
       //     amount: _tees[teeAddress].amount,
       //     withdrawnAmount: _tees[teeAddress].withdrawnAmount
       // });
+      listenForJobSubmittedEvent(teePoolContract);
+
+      // Request contribution proof from a TEE. This starts the validation process on the TEE
+      const contributionProofTx = await teePoolContract.requestContributionProof(fileId, { value: teeFee });
+      await contributionProofTx.wait();
+      console.log("Contribution proof requested");
 
       // Once user gets TeeDetails, user can send a GET request to the /attestation endpoint of the TEE to get the attestation using url from TeeDetails
-
       // User Get attestation from TEE by Sending GET request to TEE /attestation endpoint
+      console.log("TEE Details:", teeDetails);
+      console.log("TODO: Implement query to TEE Attestation URL:", teeDetails.url);
+
       // User Verify TEE attestation and safety retrieved from the GET call above
       // User Sends POST request to TEE /contribution-proofs endpoint with fileId and encryptedFileKey
+      console.log(`TODO: Implement POST request to TEE /contribution-proofs endpoint with fileId ${fileId} and encryptedFileKey ${encryptedKey}`);
 
       // TEE will get file from data registry and use encryptedFileKey to decrypt the file, after that TEE will generate a proof
       // After that TEE will call claimFeeAndAddProof(fileId, proof, proofOfExecution) on the TEE Pool contract
       // TEE Pool contract will verify execution proof and if it's correct, it will pay the TEE and add the proof to the file on the DataRegistry contract by calling addProof(fileId, tee_proof)
 
-      // User now authorize DataRegistry contract to access the file data by calling addFilePermission(fileId, walletAddress, encryptedKey)
+      // User now authorize DLPLight contract to access the file data by calling addFilePermission(fileId, walletAddress, encryptedKey)
+      // User authorizes an address(es) to decrypt their file by encrypting their file encryption key with the address’s public key
+      const authorizeTx = await dataRegsitryContract.addFilePermission(fileId, contractAddress, encryptedKey);
+      await authorizeTx.wait();
+      console.log(`File permission added for contract ${contractAddress}`);
+
       // After that user calls requestClaim(fileId) on the DLP contract to request the claim
+      const requestClaimTx = await dlpLightContract.requestClaim(fileId);
+      await requestClaimTx.wait();
 
       // DLP contract will get the file from the DataRegistry contract by calling getFile(fileId) and get back encryptedDataUrl, encryptedKey and proof
       // DLP contract decrypts the file using the encryptedKey and verifies the proof and file hash and calculates the reward
       // DLP contract issues DLP token as a reward
-
-
-      // DLP contribution
-      // Initialize DLP liquidity pool contract
-      const contractABI = [...DataLiquidityPool.abi];
-      const dlpLightContract = new ethers.Contract(
-        contractAddress as string,
-        contractABI,
-        signer
-      );
-
-      // Authorize
-      // "inputs": [
-      //         {
-      //           "internalType": "uint256",
-      //           "name": "fileId",
-      //           "type": "uint256"
-      //         },
-      //         {
-      //           "internalType": "address",
-      //           "name": "account",
-      //           "type": "address"
-      //         },
-      //         {
-      //           "internalType": "string",
-      //           "name": "key",
-      //           "type": "string"
-      //         }
-      //       ],
-      // Authorize DLP owner to access file data
-      const authorizeTx = await dataRegsitryContract.addFilePermission(fileId, walletAddress, encryptedKey);
-      await authorizeTx.wait();
-      console.log("File authorized");
-
-      // RequestClaim
-      const requestClaimTx = await dlpLightContract.requestClaim(fileId);
-      await requestClaimTx.wait();
-
-      // getFile
-      const fileData = await dlpLightContract.getFile(fileId);
-      console.log("File data:", fileData);
-
     } catch (error) {
       console.error("Error encrypting and uploading file:", error);
       setUploadState("initial");
