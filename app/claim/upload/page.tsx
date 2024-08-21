@@ -191,20 +191,38 @@ export default function Page() {
       const teeFee = await teePoolContract.teeFee();
       console.log("TEE Fee:", teeFee.toString());
 
-      // Request contribution proof
+      // Request contribution proof from a TEE. This starts the validation process on the TEE
       const contributionProof = await teePoolContract.requestContributionProof(fileId);
       console.log("Contribution proof:", contributionProof);
 
-      // TODO: Assign round-robin TEE
-      const activeTees = await teePoolContract.activeTeeList();
-      console.log("Active TEEs:", activeTees);
+      // User listens for the JobSubmitted event which is emitted during requestContributionProof call
+      // Once event received user gets latest jobId and calls jobTeed(uint256 jobId) to get a TEE details
 
-      // TODO: Get attestation from TEE
-      // Send GET request to TEE /attestation endpoint
+      // TeeDetails({
+      //     teeAddress: teeAddress,
+      //     url: _tees[teeAddress].url,
+      //     status: _tees[teeAddress].status,
+      //     amount: _tees[teeAddress].amount,
+      //     withdrawnAmount: _tees[teeAddress].withdrawnAmount
+      // });
 
-      // TODO: Verify TEE attestation and safety
+      // Once user gets TeeDetails, user can send a GET request to the /attestation endpoint of the TEE to get the attestation using url from TeeDetails
 
-      // TODO: Send POST request to TEE /contribution-proofs endpoint with fileId and encryptedFileKey
+      // User Get attestation from TEE by Sending GET request to TEE /attestation endpoint
+      // User Verify TEE attestation and safety retrieved from the GET call above
+      // User Sends POST request to TEE /contribution-proofs endpoint with fileId and encryptedFileKey
+
+      // TEE will get file from data registry and use encryptedFileKey to decrypt the file, after that TEE will generate a proof
+      // After that TEE will call claimFeeAndAddProof(fileId, proof, proofOfExecution) on the TEE Pool contract
+      // TEE Pool contract will verify execution proof and if it's correct, it will pay the TEE and add the proof to the file on the DataRegistry contract by calling addProof(fileId, tee_proof)
+
+      // User now authorize DataRegistry contract to access the file data by calling addFilePermission(fileId, walletAddress, encryptedKey)
+      // After that user calls requestClaim(fileId) on the DLP contract to request the claim
+
+      // DLP contract will get the file from the DataRegistry contract by calling getFile(fileId) and get back encryptedDataUrl, encryptedKey and proof
+      // DLP contract decrypts the file using the encryptedKey and verifies the proof and file hash and calculates the reward
+      // DLP contract issues DLP token as a reward
+
 
       // DLP contribution
       // Initialize DLP liquidity pool contract
@@ -216,7 +234,25 @@ export default function Page() {
       );
 
       // Authorize
-      const authorizeTx = await dlpLightContract.authorize(fileId);
+      // "inputs": [
+      //         {
+      //           "internalType": "uint256",
+      //           "name": "fileId",
+      //           "type": "uint256"
+      //         },
+      //         {
+      //           "internalType": "address",
+      //           "name": "account",
+      //           "type": "address"
+      //         },
+      //         {
+      //           "internalType": "string",
+      //           "name": "key",
+      //           "type": "string"
+      //         }
+      //       ],
+      // Authorize DLP owner to access file data
+      const authorizeTx = await dataRegsitryContract.addFilePermission(fileId, walletAddress, encryptedKey);
       await authorizeTx.wait();
       console.log("File authorized");
 
