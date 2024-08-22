@@ -299,7 +299,7 @@ export default function Page() {
       console.log(`File permission added for contract ${contractAddress}`);
 
       // After that user calls requestClaim(fileId) on the DLP contract to request the claim
-      const requestClaimTx = await dlpLightContract.validateFile(fileId);
+      const requestClaimTx = await dlpLightContract.addFile(fileId);
       await requestClaimTx.wait();
       console.log("Claim requested successfully");
 
