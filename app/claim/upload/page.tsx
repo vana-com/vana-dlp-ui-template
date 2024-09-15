@@ -53,8 +53,12 @@ export default function Page() {
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const storageProvider = useStorageStore((state) => state.provider);
   const contractAddress = useNetworkStore((state) => state.contract);
-  const dataRegistryContractAddress = useNetworkStore((state) => state.dataRegistryContract);
-  const teePoolContractAddress = useNetworkStore((state) => state.teePoolContract);
+  const dataRegistryContractAddress = useNetworkStore(
+    (state) => state.dataRegistryContract
+  );
+  const teePoolContractAddress = useNetworkStore(
+    (state) => state.teePoolContract
+  );
   const dropboxToken = useStorageStore((state) => state.token);
   const publicKeyBase64 = useNetworkStore((state) => state.publicKeyBase64);
   const isDropboxConnected = !!dropboxToken;
@@ -79,7 +83,9 @@ export default function Page() {
   const [teeDetails, setTeeDetails] = useState<any | null>(null);
   const eventListenerRef = useRef<JobSubmittedListener | null>(null);
 
-  const listenForJobSubmittedEvent = (teePoolContract: ethers.Contract): Promise<any> => {
+  const listenForJobSubmittedEvent = (
+    teePoolContract: ethers.Contract
+  ): Promise<any> => {
     return new Promise((resolve) => {
       // Remove previous listener if it exists
       if (eventListenerRef.current) {
@@ -87,8 +93,15 @@ export default function Page() {
       }
 
       // Create new listener
-      const listener: JobSubmittedListener = async (jobId, fileId, bidAmount, event) => {
-        console.log(`New job submitted: JobID ${jobId}, FileID ${fileId}, Bid Amount ${bidAmount}`);
+      const listener: JobSubmittedListener = async (
+        jobId,
+        fileId,
+        bidAmount,
+        event
+      ) => {
+        console.log(
+          `New job submitted: JobID ${jobId}, FileID ${fileId}, Bid Amount ${bidAmount}`
+        );
         const jobIdNumber = Number(jobId);
         setJobId(jobIdNumber);
         const details = await getTeeDetails(teePoolContract, jobIdNumber);
@@ -103,7 +116,10 @@ export default function Page() {
     });
   };
 
-  const getTeeDetails = async (teePoolContract: ethers.Contract, jobId: number) => {
+  const getTeeDetails = async (
+    teePoolContract: ethers.Contract,
+    jobId: number
+  ) => {
     try {
       const details = await teePoolContract.jobTee(jobId);
       setTeeDetails(details);
@@ -243,7 +259,7 @@ export default function Page() {
 
       // Get file id from receipt transaction log
       const log = receipt.logs[0];
-      const fileId = Number(log.args[0])
+      const fileId = Number(log.args[0]);
       console.log("File ID:", fileId);
       setFileId(fileId);
 
@@ -258,19 +274,29 @@ export default function Page() {
       const teeDetailsPromise = listenForJobSubmittedEvent(teePoolContract);
 
       // Request contribution proof from a TEE. This starts the validation process on the TEE
-      const contributionProofTx = await teePoolContract.requestContributionProof(fileId, { value: teeFee });
+      const contributionProofTx =
+        await teePoolContract.requestContributionProof(fileId, {
+          value: ethers.parseUnits(teeFee.toString(), 18),
+        });
       await contributionProofTx.wait();
       console.log("Contribution proof requested");
 
       // Wait for the TEE details to be received
-      const teeDetails = await teeDetailsPromise as any;
+      const teeDetails = (await teeDetailsPromise) as any;
 
       // Once user gets TeeDetails, user can send a GET request to the /attestation endpoint of the TEE to get the attestation using url from TeeDetails
       console.log("TEE Details:", teeDetails);
-      console.log("TODO: Implement query to TEE Attestation URL:", teeDetails.url);
+      console.log(
+        "TODO: Implement query to TEE Attestation URL:",
+        teeDetails.url
+      );
+      // TODO: Fix this: we use a delay here to wait for setJobId(x) in the listener to complete.
+      await new Promise((resolve) => setTimeout(resolve, 2000));
 
       // Implement the GET request to the TEE attestation endpoint
-      console.log(`TODO: Implement GET request to TEE attestation endpoint ${teeDetails.url}/attestation`);
+      console.log(
+        `TODO: Implement GET request to TEE attestation endpoint ${teeDetails.url}/attestation`
+      );
       // const attestationResponse = await fetch(`${teeDetails.url}/attestation`);
       // const attestationData = await attestationResponse.json();
       // console.log("Attestation data:", attestationData);
@@ -279,22 +305,35 @@ export default function Page() {
       // TODO: Implement attestation verification logic here
 
       // User Sends POST request to TEE /contribution-proofs endpoint with fileId and encryptedFileKey
-      console.log(`TODO: Implement Sending contribution proof to TEE ${teeDetails.url}/contribution-proofs`);
-      // const contributionProofResponse = await fetch(`${teeDetails.url}/contribution-proofs`, {
-      //   method: 'POST',
-      //   headers: {
-      //     'Content-Type': 'application/json',
-      //   },
-      //   body: JSON.stringify({
-      //     fileId: fileId,
-      //     encryptedFileKey: encryptedKey,
-      //   }),
-      // });
-      // const contributionProofData = await contributionProofResponse.json();
-      // console.log("Contribution proof response:", contributionProofData);
+      const contributionProofResponse = await fetch(
+        `${teeDetails.url}/RunProof`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            job_id: jobId,
+            file_id: fileId,
+            encryption_key: signature,
+            proof_url:
+              "https://github.com/vana-com/vana-satya-proof-template/releases/download/v20/gsc-my-proof-20.tar.gz",
+            encryption_seed: "Please sign to retrieve your encryption key",
+            env_vars: {
+              USER_EMAIL: "user123@gmail.com",
+            },
+          }),
+        }
+      );
+      const contributionProofData = await contributionProofResponse.json();
+      console.log("Contribution proof response:", contributionProofData);
 
       // User now authorize DLPLight contract to access the file data by calling addFilePermission(fileId, walletAddress, encryptedKey)
-      const authorizeTx = await dataRegsitryContract.addFilePermission(fileId, contractAddress, encryptedKey);
+      const authorizeTx = await dataRegsitryContract.addFilePermission(
+        fileId,
+        contractAddress,
+        encryptedKey
+      );
       await authorizeTx.wait();
       console.log(`File permission added for contract ${contractAddress}`);
 
@@ -382,14 +421,16 @@ export default function Page() {
                 <UploadingState fileName={file.name} fileSize={file.size} />
               )}
 
-              {uploadState === "done" && encryptedFile && uploadedFileMetadata && (
-                <UploadedFileState
-                  fileName={uploadedFileMetadata.name ?? "encrypted_file"}
-                  fileSize={uploadedFileMetadata.size ?? encryptedFile.size}
-                  fileId={fileId}
-                  onDownload={handleDownload}
-                />
-              )}
+              {uploadState === "done" &&
+                encryptedFile &&
+                uploadedFileMetadata && (
+                  <UploadedFileState
+                    fileName={uploadedFileMetadata.name ?? "encrypted_file"}
+                    fileSize={uploadedFileMetadata.size ?? encryptedFile.size}
+                    fileId={fileId}
+                    onDownload={handleDownload}
+                  />
+                )}
 
               <Dialog opened={opened} onClose={close} size="lg" p={0}>
                 <Notification color="red">
@@ -398,9 +439,7 @@ export default function Page() {
                 </Notification>
               </Dialog>
 
-              {uploadState === "done" && fileId && (
-                <Success fileId={fileId} />
-              )}
+              {uploadState === "done" && fileId && <Success fileId={fileId} />}
             </Stack>
           </Grid.Col>
         </Grid>
