@@ -16,8 +16,8 @@ const networks = {
     explorerUrl: "https://satori.vanascan.io",
     currency: "VANA",
     contract: process.env.NEXT_PUBLIC_SMART_CONTRACT_ADDRESS_SATORI_TESTNET || "satori",
-    dataRegistryContract: process.env.NEXT_PUBLIC_SMART_CONTRACT_ADDRESS_DATA_REGISTRY || "0xDAAD102189FE8D0FE43c1926b109E94D06bD8a97",
-    teePoolContract: process.env.NEXT_PUBLIC_SMART_CONTRACT_ADDRESS_TEE_POOL || "0x88790ffF10E952ffc13Be22a442616eAfE081594",
+    dataRegistryContract: process.env.NEXT_PUBLIC_SMART_CONTRACT_ADDRESS_DATA_REGISTRY || "0xEA882bb75C54DE9A08bC46b46c396727B4BFe9a5",
+    teePoolContract: process.env.NEXT_PUBLIC_SMART_CONTRACT_ADDRESS_TEE_POOL || "0xF084Ca24B4E29Aa843898e0B12c465fAFD089965",
   },
   mainnet: {
     chainId: "1480",
