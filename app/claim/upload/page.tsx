@@ -321,7 +321,7 @@ export default function Page() {
             file_id: fileId,
             encryption_key: signature,
             proof_url:
-              "https://github.com/vana-com/vana-satya-proof-template/releases/download/v22/gsc-my-proof-22.tar.gz",
+              "https://github.com/vana-com/vana-satya-proof-template/releases/download/v24/gsc-my-proof-24.tar.gz",
             encryption_seed: "Please sign to retrieve your encryption key",
             env_vars: {
               USER_EMAIL: "user123@gmail.com",
