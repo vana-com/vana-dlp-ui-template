@@ -271,27 +271,31 @@ export default function Page() {
       console.log("TEE Fee:", teeFee.toString());
 
       // Start listening for JobSubmitted event
-      const teeDetailsPromise = listenForJobSubmittedEvent(teePoolContract);
+      const jobSubmittedPromise = new Promise((resolve) => {
+        const listener = (jobId: number, fileId: number, bidAmount: number, event: any) => {
+          console.log(`New job submitted: JobID ${jobId}, FileID ${fileId}, Bid Amount ${bidAmount}`);
+          resolve({ jobId: Number(jobId), event });
+        };
+        teePoolContract.on("JobSubmitted", listener);
+      });
 
       // Request contribution proof from a TEE. This starts the validation process on the TEE
-      const contributionProofTx =
-        await teePoolContract.requestContributionProof(fileId, {
-          value: ethers.parseUnits(teeFee.toString(), 18),
-        });
+      const contributionProofTx = await teePoolContract.requestContributionProof(fileId, {
+        value: ethers.parseUnits(teeFee.toString(), 18),
+      });
       await contributionProofTx.wait();
       console.log("Contribution proof requested");
 
-      // Wait for the TEE details to be received
-      const teeDetails = (await teeDetailsPromise) as any;
+      // Wait for the JobSubmitted event
+      const { jobId, event } = await jobSubmittedPromise as any;
 
-      // Once user gets TeeDetails, user can send a GET request to the /attestation endpoint of the TEE to get the attestation using url from TeeDetails
+      // Get TEE details
+      const teeDetails = await getTeeDetails(teePoolContract, jobId);
       console.log("TEE Details:", teeDetails);
       console.log(
         "TODO: Implement query to TEE Attestation URL:",
         teeDetails.url
       );
-      // TODO: Fix this: we use a delay here to wait for setJobId(x) in the listener to complete.
-      await new Promise((resolve) => setTimeout(resolve, 2000));
 
       // Implement the GET request to the TEE attestation endpoint
       console.log(
