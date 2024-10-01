@@ -30,15 +30,15 @@ import Autoplay from "embla-carousel-autoplay";
 import { ethers } from "ethers";
 import * as openpgp from "openpgp";
 import { useEffect, useRef, useState } from "react";
-import DataLiquidityPool from "./../../contracts/DataLiquidityPoolLightImplementation.json";
-import TeePoolImplementation from "./../../contracts/TeePoolImplementation.json";
+import DataLiquidityPool from "@/app/contracts/DataLiquidityPoolLightImplementation.json";
+import TeePoolImplementation from "@/app/contracts/TeePoolImplementation.json";
 import DataRegistryImplementation from "@/app/contracts/DataRegistryImplementation.json";
-import { ConnectStep } from "./components/connect";
-import { Success } from "./components/success";
-import { UploadState } from "./components/upload";
-import { UploadedFileState } from "./components/uploaded";
-import { UploadingState } from "./components/uploading";
-import { Disclaimer } from "../components/disclaimer";
+import { ConnectStep } from "./home/components/connect";
+import { Success } from "./home/components/success";
+import { UploadState } from "./home/components/upload";
+import { UploadedFileState } from "./home/components/uploaded";
+import { UploadingState } from "./home/components/uploading";
+import { Disclaimer } from "./home/components/disclaimer";
 
 const FIXED_MESSAGE = "Please sign to retrieve your encryption key";
 
@@ -50,6 +50,7 @@ type JobSubmittedListener = (
 ) => void;
 
 export default function Page() {
+  const [currentStatus, setCurrentStatus] = useState<string | null>(null);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const storageProvider = useStorageStore((state) => state.provider);
   const contractAddress = useNetworkStore((state) => state.contract);
@@ -171,6 +172,7 @@ export default function Page() {
       // Sign a fixed message with the user's wallet to create a deterministic signature
       const signature = await signMessage(walletAddress, FIXED_MESSAGE);
       console.log("Signature:", signature);
+      setCurrentStatus("Signature created");
 
       // Encrypt the file using the signature as the symmetric key
       const encryptedData = await clientSideEncrypt(file, signature);
@@ -188,6 +190,8 @@ export default function Page() {
         dropboxToken,
         storageProvider
       );
+
+      setCurrentStatus("File uploaded");
 
       // Get shareUrl to file in storage
       const encryptedDataUrl = await getEncryptedDataUrl(
@@ -220,6 +224,7 @@ export default function Page() {
       });
 
       setUploadState("done");
+      setCurrentStatus(`File uploaded to ${encryptedDataUrl}`);
 
       // Initialize contracts
       const provider = new ethers.BrowserProvider(window.ethereum);
@@ -253,9 +258,12 @@ export default function Page() {
       const encryptedKey = btoa(encryptedSignature as string);
 
       // User adds file to the DataRegistry contract by calling addFile(encryptedDataUrl)
+      setCurrentStatus("Adding file to DataRegistry contract");
       const tx = await dataRegsitryContract.addFile(encryptedDataUrl);
       const receipt = await tx.wait();
       console.log("File added, transaction receipt:", receipt.hash);
+
+      setCurrentStatus("File added to DataRegistry contract");
 
       // Get file id from receipt transaction log
       const log = receipt.logs[0];
@@ -380,109 +388,55 @@ export default function Page() {
     handleFileUpload(file);
   }, [file]);
 
-  return (
-    <Box>
-      <Container>
-        <Grid gutter="lg" grow>
-          <Grid.Col span={{ sm: 12, md: 6 }} order={{ base: 2, md: 1 }}>
-            <Stack align="stretch" justify="center" gap="lg">
-              <Title order={3} ff="monospace">
-                Instructions
-              </Title>
-              <Disclaimer />
-              <InstructionsGallery />
-              <Stack gap="sm">
-                <Text fw="500" size="md">
-                  1. Navigate to your account and open settings.
-                </Text>
-                <Text fw="500" size="md">
-                  2. Open the Data Controls tab and click on "Export".
-                </Text>
-                <Text fw="500" size="md">
-                  3. You will receive an email to download your data.
-                </Text>
-                <Text fw="500" size="md">
-                  4. Please upload this data file on the right.
-                </Text>
-              </Stack>
-            </Stack>
-          </Grid.Col>
-          <Grid.Col
-            span={4}
-            offset={{ sm: 0, md: 1 }}
-            pt={{ sm: 0, md: 50 }}
-            order={{ base: 1, md: 2 }}
-          >
-            <Stack gap="md">
-              <Title order={5}>
-                {uploadState === "done" ? "Congratulations" : "Upload data"}
-              </Title>
+  return <Box>
+    <Container>
+      <Grid gutter="lg" grow>
+        <Grid.Col
+          span={4}
+          offset={{ sm: 0, md: 1 }}
+          pt={{ sm: 0, md: 50 }}
+          order={{ base: 1, md: 2 }}
+        >
+          <Stack gap="md">
+            <Title order={5}>
+              {/*{uploadState === "done" ? "Congratulations" : "Upload data"}*/}
+              Contribute data
+            </Title>
 
-              {uploadState === "initial" && !isDropboxConnected && (
-                <ConnectStep />
-              )}
+            {uploadState === "initial" && !isDropboxConnected && <ConnectStep />}
 
-              {uploadState === "initial" && isDropboxConnected && (
-                <UploadState onSetFile={handleSetFile} />
-              )}
+            {uploadState === "initial" && isDropboxConnected && <UploadState onSetFile={handleSetFile} />}
 
-              {uploadState === "loading" && file && (
-                <UploadingState fileName={file.name} fileSize={file.size} />
-              )}
+            {uploadState === "loading" && file && <UploadingState fileName={file.name} fileSize={file.size} />}
 
-              {uploadState === "done" &&
-                encryptedFile &&
-                uploadedFileMetadata && (
-                  <UploadedFileState
-                    fileName={uploadedFileMetadata.name ?? "encrypted_file"}
-                    fileSize={uploadedFileMetadata.size ?? encryptedFile.size}
-                    fileId={fileId}
-                    onDownload={handleDownload}
-                  />
-                )}
+            {uploadState === "done" &&
+              encryptedFile &&
+              uploadedFileMetadata && <UploadedFileState
+                  fileName={uploadedFileMetadata.name ?? "encrypted_file"}
+                  fileSize={uploadedFileMetadata.size ?? encryptedFile.size}
+                  fileId={fileId}
+                  onDownload={handleDownload}
+                />}
 
-              <Dialog opened={opened} onClose={close} size="lg" p={0}>
-                <Notification color="red">
-                  There was an error trying to encode your file. Please make
-                  sure you have a wallet connected and try again.
-                </Notification>
-              </Dialog>
+            {currentStatus ? (
+              <Stack gap="md">
+                <Title order={6}>
+                  {currentStatus}
+                </Title>
+              </Stack>) : null}
 
-              {uploadState === "done" && fileId && <Success fileId={fileId} />}
-            </Stack>
-          </Grid.Col>
-        </Grid>
-      </Container>
-    </Box>
-  );
+
+            <Dialog opened={opened} onClose={close} size="lg" p={0}>
+              <Notification color="red">
+                There was an error trying to encode your file. Please make
+                sure you have a wallet connected and try again.
+              </Notification>
+            </Dialog>
+
+            {uploadState === "done" && fileId && <Success fileId={fileId} />}
+          </Stack>
+        </Grid.Col>
+      </Grid>
+    </Container>
+  </Box>;
 }
-
-const InstructionsGallery = () => {
-  const autoplay = useRef(Autoplay({ delay: 2000 }));
-
-  const slides = new Array(10).fill(null).map((_, idx) => {
-    const url = `/images/claim/instructions_${idx + 1}.png`;
-    return (
-      <Carousel.Slide key={url}>
-        <Image src={url} />
-      </Carousel.Slide>
-    );
-  });
-
-  return (
-    <Paper shadow="xs" p="sm" radius={10}>
-      <Carousel
-        withIndicators
-        loop
-        controlSize={40}
-        color="brand-3"
-        classNames={{ control: "!bg-white" }}
-        plugins={[autoplay.current]}
-        onMouseEnter={autoplay.current.stop}
-        onMouseLeave={autoplay.current.reset}
-      >
-        {slides}
-      </Carousel>
-    </Paper>
-  );
-};
