@@ -11,7 +11,6 @@ import {
   useWalletStore,
 } from "@/app/core";
 import { clientSideEncrypt } from "@/app/utils/crypto";
-import { Carousel } from "@mantine/carousel";
 import {
   Box,
   Container,
@@ -26,7 +25,6 @@ import {
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
-import Autoplay from "embla-carousel-autoplay";
 import { ethers } from "ethers";
 import * as openpgp from "openpgp";
 import { useEffect, useRef, useState } from "react";
@@ -38,7 +36,6 @@ import { Success } from "./home/components/success";
 import { UploadState } from "./home/components/upload";
 import { UploadedFileState } from "./home/components/uploaded";
 import { UploadingState } from "./home/components/uploading";
-import { Disclaimer } from "./home/components/disclaimer";
 
 const FIXED_MESSAGE = "Please sign to retrieve your encryption key";
 
@@ -50,7 +47,7 @@ type JobSubmittedListener = (
 ) => void;
 
 export default function Page() {
-  const [currentStatus, setCurrentStatus] = useState<string | null>(null);
+  const [statusLog, setStatusLog] = useState<string[]>([]);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const storageProvider = useStorageStore((state) => state.provider);
   const contractAddress = useNetworkStore((state) => state.contract);
@@ -80,9 +77,11 @@ export default function Page() {
   const [file, setFile] = useState<File | null>(null);
   const [encryptedFile, setEncryptedFile] = useState<Blob | null>(null);
 
-  const [jobId, setJobId] = useState<number | null>(null);
-  const [teeDetails, setTeeDetails] = useState<any | null>(null);
   const eventListenerRef = useRef<JobSubmittedListener | null>(null);
+
+  const appendStatus = (newStatus: string) => {
+    setStatusLog(prevLog => [...prevLog, newStatus]);
+  };
 
   const listenForJobSubmittedEvent = (
     teePoolContract: ethers.Contract
@@ -104,7 +103,6 @@ export default function Page() {
           `New job submitted: JobID ${jobId}, FileID ${fileId}, Bid Amount ${bidAmount}`
         );
         const jobIdNumber = Number(jobId);
-        setJobId(jobIdNumber);
         const details = await getTeeDetails(teePoolContract, jobIdNumber);
         resolve(details);
       };
@@ -123,7 +121,6 @@ export default function Page() {
   ) => {
     try {
       const details = await teePoolContract.jobTee(jobId);
-      setTeeDetails(details);
       console.log("TEE Details:", details);
       return details;
     } catch (error) {
@@ -169,10 +166,11 @@ export default function Page() {
 
     try {
       setUploadState("loading");
+      appendStatus("Starting file upload process");
       // Sign a fixed message with the user's wallet to create a deterministic signature
       const signature = await signMessage(walletAddress, FIXED_MESSAGE);
       console.log("Signature:", signature);
-      setCurrentStatus("Signature created");
+      appendStatus("Signature created");
 
       // Encrypt the file using the signature as the symmetric key
       const encryptedData = await clientSideEncrypt(file, signature);
@@ -191,7 +189,7 @@ export default function Page() {
         storageProvider
       );
 
-      setCurrentStatus("File uploaded");
+      appendStatus("File uploaded");
 
       // Get shareUrl to file in storage
       const encryptedDataUrl = await getEncryptedDataUrl(
@@ -224,7 +222,7 @@ export default function Page() {
       });
 
       setUploadState("done");
-      setCurrentStatus(`File uploaded to ${encryptedDataUrl}`);
+      appendStatus(`File uploaded to ${encryptedDataUrl}`);
 
       // Initialize contracts
       const provider = new ethers.BrowserProvider(window.ethereum);
@@ -258,18 +256,19 @@ export default function Page() {
       const encryptedKey = btoa(encryptedSignature as string);
 
       // User adds file to the DataRegistry contract by calling addFile(encryptedDataUrl)
-      setCurrentStatus("Adding file to DataRegistry contract");
+      appendStatus("Adding file to DataRegistry contract");
       const tx = await dataRegsitryContract.addFile(encryptedDataUrl);
       const receipt = await tx.wait();
       console.log("File added, transaction receipt:", receipt.hash);
 
-      setCurrentStatus("File added to DataRegistry contract");
+      appendStatus("File added to DataRegistry contract");
 
       // Get file id from receipt transaction log
       const log = receipt.logs[0];
       const fileId = Number(log.args[0]);
       console.log("File ID:", fileId);
       setFileId(fileId);
+      appendStatus(`File added with ID: ${fileId}`);
 
       setUploadState("done");
       console.log(`File uploaded with ID: ${fileId}`);
@@ -299,6 +298,7 @@ export default function Page() {
 
       // Get TEE details
       const teeDetails = await getTeeDetails(teePoolContract, jobId);
+      appendStatus(`TEE details fetched for JobID ${jobId}`);
       console.log("TEE Details:", teeDetails);
       console.log(
         "TODO: Implement query to TEE Attestation URL:",
@@ -317,6 +317,7 @@ export default function Page() {
       // TODO: Implement attestation verification logic here
 
       // User Sends POST request to TEE /contribution-proofs endpoint with fileId and encryptedFileKey
+      appendStatus(`Sending contribution proof request to TEE`);
       const contributionProofResponse = await fetch(
         `${teeDetails.url}/RunProof`,
         {
@@ -345,6 +346,10 @@ export default function Page() {
       const contributionProofData = await contributionProofResponse.json();
       console.log("Contribution proof response:", contributionProofData);
 
+      appendStatus(`Contribution proof response received, ${JSON.stringify(contributionProofData)}`);
+
+      appendStatus(`Adding file permission for contract ${contractAddress}`);
+
       // User now authorize DLPLight contract to access the file data by calling addFilePermission(fileId, walletAddress, encryptedKey)
       const authorizeTx = await dataRegsitryContract.addFilePermission(
         fileId,
@@ -354,12 +359,36 @@ export default function Page() {
       await authorizeTx.wait();
       console.log(`File permission added for contract ${contractAddress}`);
 
+      appendStatus(`File permission added for contract ${contractAddress}`);
+      appendStatus(`Asking DLPContract for a validation ${contractAddress}`);
+
       // After that user calls requestClaim(fileId) on the DLP contract to request the claim
-      const requestClaimTx = await dlpLightContract.addFile(fileId);
+
+      // {
+      //       "inputs": [
+      //         {
+      //           "internalType": "uint256",
+      //           "name": "registryId",
+      //           "type": "uint256"
+      //         },
+      //         {
+      //           "internalType": "uint256",
+      //           "name": "proofIndex",
+      //           "type": "uint256"
+      //         }
+      //       ],
+      //       "name": "addFile",
+      //       "outputs": [],
+      //       "stateMutability": "nonpayable",
+      //       "type": "function"
+      //     },
+
+      const requestClaimTx = await dlpLightContract.addFile(fileId, 1);
       await requestClaimTx.wait();
       console.log("Claim requested successfully");
 
       setUploadState("done");
+      appendStatus("Process completed successfully");
 
       // DLP contract will get the file from the DataRegistry contract by calling getFile(fileId) and get back encryptedDataUrl, encryptedKey and proof
       // DLP contract decrypts the file using the encryptedKey and verifies the proof and file hash and calculates the reward
@@ -367,6 +396,7 @@ export default function Page() {
     } catch (error) {
       console.error("Error encrypting and uploading file:", error);
       setUploadState("initial");
+      appendStatus("Error: Failed to encrypt and upload file");
       handleError();
     }
   };
@@ -388,55 +418,62 @@ export default function Page() {
     handleFileUpload(file);
   }, [file]);
 
-  return <Box>
-    <Container>
-      <Grid gutter="lg" grow>
-        <Grid.Col
-          span={4}
-          offset={{ sm: 0, md: 1 }}
-          pt={{ sm: 0, md: 50 }}
-          order={{ base: 1, md: 2 }}
-        >
-          <Stack gap="md">
-            <Title order={5}>
-              {/*{uploadState === "done" ? "Congratulations" : "Upload data"}*/}
-              Contribute data
-            </Title>
+  return (
+    <Box>
+      <Container>
+        <Grid gutter="lg" grow>
+          <Grid.Col
+            span={4}
+            offset={{ sm: 0, md: 1 }}
+            pt={{ sm: 0, md: 50 }}
+            order={{ base: 1, md: 2 }}
+          >
+            <Stack gap="md">
+              <Title order={5}>
+                {/*{uploadState === "done" ? "Congratulations" : "Upload data"}*/}
+                Contribute data
+              </Title>
 
-            {uploadState === "initial" && !isDropboxConnected && <ConnectStep />}
+              {uploadState === "initial" && !isDropboxConnected && <ConnectStep />}
 
-            {uploadState === "initial" && isDropboxConnected && <UploadState onSetFile={handleSetFile} />}
+              {uploadState === "initial" && isDropboxConnected && <UploadState onSetFile={handleSetFile} />}
 
-            {uploadState === "loading" && file && <UploadingState fileName={file.name} fileSize={file.size} />}
+              {uploadState === "loading" && file && <UploadingState fileName={file.name} fileSize={file.size} />}
 
-            {uploadState === "done" &&
-              encryptedFile &&
-              uploadedFileMetadata && <UploadedFileState
-                  fileName={uploadedFileMetadata.name ?? "encrypted_file"}
-                  fileSize={uploadedFileMetadata.size ?? encryptedFile.size}
-                  fileId={fileId}
-                  onDownload={handleDownload}
-                />}
+              {uploadState === "done" &&
+                encryptedFile &&
+                uploadedFileMetadata && (
+                  <UploadedFileState
+                    fileName={uploadedFileMetadata.name ?? "encrypted_file"}
+                    fileSize={uploadedFileMetadata.size ?? encryptedFile.size}
+                    fileId={fileId}
+                    onDownload={handleDownload}
+                  />
+                )}
 
-            {currentStatus ? (
-              <Stack gap="md">
-                <Title order={6}>
-                  {currentStatus}
-                </Title>
-              </Stack>) : null}
+              {statusLog.length > 0 && (
+                <Stack gap="md">
+                  <Title order={6}>Status Log:</Title>
+                  <Paper p="sm" style={{ maxHeight: '200px', overflow: 'auto' }}>
+                    {statusLog.map((status, index) => (
+                      <Text key={index}>{status}</Text>
+                    ))}
+                  </Paper>
+                </Stack>
+              )}
 
+              <Dialog opened={opened} onClose={close} size="lg" p={0}>
+                <Notification color="red">
+                  There was an error trying to encode your file. Please make
+                  sure you have a wallet connected and try again.
+                </Notification>
+              </Dialog>
 
-            <Dialog opened={opened} onClose={close} size="lg" p={0}>
-              <Notification color="red">
-                There was an error trying to encode your file. Please make
-                sure you have a wallet connected and try again.
-              </Notification>
-            </Dialog>
-
-            {uploadState === "done" && fileId && <Success fileId={fileId} />}
-          </Stack>
-        </Grid.Col>
-      </Grid>
-    </Container>
-  </Box>;
+              {/*{uploadState === "done" && fileId && <Success fileId={fileId} />}*/}
+            </Stack>
+          </Grid.Col>
+        </Grid>
+      </Container>
+    </Box>
+  );
 }
