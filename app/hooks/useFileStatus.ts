@@ -23,15 +23,13 @@ export const useFileStatus = (fileId: number | null) => {
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
       const contract = new ethers.Contract(contractAddress, DataLiquidityPoolLightImplementation.abi, signer);
-
       const fileInfo = await contract.files(fileId);
-      setIsFinalized(fileInfo.finalized);
-      setReward(Number(ethers.formatEther(fileInfo.reward)));
-      setIsClaimable(fileInfo.finalized && fileInfo.rewardWithdrawn === BigInt(0));
+      setIsFinalized(fileInfo.status == 2);
+      setReward(Number(ethers.formatEther(fileInfo.rewardAmount)));
+      setIsClaimable(fileInfo.status == 2 && fileInfo.rewardWithdrawn === BigInt(0));
       setError(null);
     } catch (err) {
       console.error("Error checking file status:", err);
-      setError("Failed to check file status");
     }
   }, [fileId, contractAddress, walletAddress]);
 
