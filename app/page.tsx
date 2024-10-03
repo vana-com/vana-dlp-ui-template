@@ -36,6 +36,7 @@ import { Success } from "./home/components/success";
 import { UploadState } from "./home/components/upload";
 import { UploadedFileState } from "./home/components/uploaded";
 import { UploadingState } from "./home/components/uploading";
+import { config } from "@/app/config";
 
 const FIXED_MESSAGE = "Please sign to retrieve your encryption key";
 
@@ -50,13 +51,11 @@ export default function Page() {
   const [statusLog, setStatusLog] = useState<string[]>([]);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const storageProvider = useStorageStore((state) => state.provider);
-  const contractAddress = useNetworkStore((state) => state.contract);
-  const dataRegistryContractAddress = useNetworkStore(
-    (state) => state.dataRegistryContract
-  );
-  const teePoolContractAddress = useNetworkStore(
-    (state) => state.teePoolContract
-  );
+
+  const contractAddress = config.smartContracts.dlp;
+  const dataRegistryContractAddress = config.smartContracts.dataRegistry;
+  const teePoolContractAddress = config.smartContracts.teePool;
+
   const dropboxToken = useStorageStore((state) => state.token);
   const publicKeyBase64 = useNetworkStore((state) => state.publicKeyBase64);
   const isDropboxConnected = !!dropboxToken;

@@ -2,6 +2,7 @@ import { useNetworkStore, useWalletStore } from "@/app/core";
 import { ethers } from "ethers";
 import { useState, useEffect, useCallback } from "react";
 import DataLiquidityPoolLightImplementation from "@/app/contracts/DataLiquidityPoolLightImplementation.json";
+import { config } from "@/app/config";
 
 export const useFileStatus = (fileId: number | null) => {
   const [isFinalized, setIsFinalized] = useState(false);
@@ -10,7 +11,7 @@ export const useFileStatus = (fileId: number | null) => {
   const [isClaiming, setIsClaiming] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const contractAddress = useNetworkStore((state) => state.contract);
+  const contractAddress = config.smartContracts.dlp
   const walletAddress = useWalletStore((state) => state.walletAddress);
 
   const checkFileStatus = useCallback(async () => {
