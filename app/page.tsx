@@ -48,7 +48,7 @@ type JobSubmittedListener = (
 ) => void;
 
 export default function Page() {
-  const [statusLog, setStatusLog] = useState<string[]>([]);
+  const [statusLog, setStatusLog] = useState<string[]>(["Please select a file to start contribution process"]);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const storageProvider = useStorageStore((state) => state.provider);
 
@@ -165,11 +165,11 @@ export default function Page() {
 
     try {
       setUploadState("loading");
-      appendStatus("Starting file upload process");
+      appendStatus(`Doing a client side file signing, asking user to sign the message to create a deterministic signature...`);
       // Sign a fixed message with the user's wallet to create a deterministic signature
       const signature = await signMessage(walletAddress, FIXED_MESSAGE);
       console.log("Signature:", signature);
-      appendStatus("Signature created");
+      appendStatus(`Signature created: '${signature}'`);
 
       // Encrypt the file using the signature as the symmetric key
       const encryptedData = await clientSideEncrypt(file, signature);
@@ -187,8 +187,6 @@ export default function Page() {
         dropboxToken,
         storageProvider
       );
-
-      appendStatus("File uploaded");
 
       // Get shareUrl to file in storage
       const encryptedDataUrl = await getEncryptedDataUrl(
@@ -223,7 +221,7 @@ export default function Page() {
       setUploadState("done");
       appendStatus(`File uploaded to ${encryptedDataUrl}`);
 
-      // Initialize contracts
+      // Initialize contracts TODO: Move this to a separate function - file
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
 
@@ -255,19 +253,17 @@ export default function Page() {
       const encryptedKey = btoa(encryptedSignature as string);
 
       // User adds file to the DataRegistry contract by calling addFile(encryptedDataUrl)
-      appendStatus("Adding file to DataRegistry contract");
+      appendStatus("Adding file to DataRegistry contract. Requesting user for permission to add file to the contract...");
       const tx = await dataRegsitryContract.addFile(encryptedDataUrl);
       const receipt = await tx.wait();
       console.log("File added, transaction receipt:", receipt.hash);
-
-      appendStatus("File added to DataRegistry contract");
 
       // Get file id from receipt transaction log
       const log = receipt.logs[0];
       const fileId = Number(log.args[0]);
       console.log("File ID:", fileId);
       setFileId(fileId);
-      appendStatus(`File added with ID: ${fileId}`);
+      appendStatus(`File added to DataRegistry with id '${fileId}'. Requesting TEE fees from the TeePool contract...`);
 
       setUploadState("done");
       console.log(`File uploaded with ID: ${fileId}`);
@@ -276,28 +272,40 @@ export default function Page() {
       const teeFee = await teePoolContract.teeFee();
       console.log("TEE Fee:", teeFee.toString());
 
+      appendStatus(`TEE fee fetched: ${teeFee.toString()} VANA for running the contribution proof on the TEE`);
+
       // Start listening for JobSubmitted event
       const jobSubmittedPromise = new Promise((resolve) => {
         const listener = (jobId: number, fileId: number, bidAmount: number, event: any) => {
           console.log(`New job submitted: JobID ${jobId}, FileID ${fileId}, Bid Amount ${bidAmount}`);
+
+          // TODO: Make sure it's only resolve with a current file ID, otherwise it might collide with other file uploads
+
           resolve({ jobId: Number(jobId), event });
         };
         teePoolContract.on("JobSubmitted", listener);
       });
+
+      appendStatus(`Requesting contribution proof from TEE...`);
 
       // Request contribution proof from a TEE. This starts the validation process on the TEE
       const contributionProofTx = await teePoolContract.requestContributionProof(fileId, {
         value: ethers.parseUnits(teeFee.toString(), 18),
       });
       await contributionProofTx.wait();
+
+      appendStatus(`Contribution proof requested. Waiting for JobSubmitted event from TEE Pool contract...`);
+
       console.log("Contribution proof requested");
 
       // Wait for the JobSubmitted event
       const { jobId, event } = await jobSubmittedPromise as any;
 
+      appendStatus(`Requesting tee details for JobID '${jobId}'...`);
+
       // Get TEE details
       const teeDetails = await getTeeDetails(teePoolContract, jobId);
-      appendStatus(`TEE details fetched for JobID ${jobId}`);
+      appendStatus(`TEE details fetched for JobID '${jobId}'`);
       console.log("TEE Details:", teeDetails);
       console.log(
         "TODO: Implement query to TEE Attestation URL:",
@@ -308,15 +316,10 @@ export default function Page() {
       console.log(
         `TODO: Implement GET request to TEE attestation endpoint ${teeDetails.url}/attestation`
       );
-      // const attestationResponse = await fetch(`${teeDetails.url}/attestation`);
-      // const attestationData = await attestationResponse.json();
-      // console.log("Attestation data:", attestationData);
-
-      // User Verify TEE attestation and safety retrieved from the GET call above
-      // TODO: Implement attestation verification logic here
 
       // User Sends POST request to TEE /contribution-proofs endpoint with fileId and encryptedFileKey
       appendStatus(`Sending contribution proof request to TEE`);
+      // TODO: Move to separate function
       const contributionProofResponse = await fetch(
         `${teeDetails.url}/RunProof`,
         {
@@ -345,9 +348,8 @@ export default function Page() {
       const contributionProofData = await contributionProofResponse.json();
       console.log("Contribution proof response:", contributionProofData);
 
-      appendStatus(`Contribution proof response received, ${JSON.stringify(contributionProofData)}`);
-
-      appendStatus(`Adding file permission for contract ${contractAddress}`);
+      appendStatus(`Contribution proof response received from TEE.`);
+      appendStatus(`Adding file permissions to DataRegistry contract...`);
 
       // User now authorize DLPLight contract to access the file data by calling addFilePermission(fileId, walletAddress, encryptedKey)
       const authorizeTx = await dataRegsitryContract.addFilePermission(
@@ -358,40 +360,18 @@ export default function Page() {
       await authorizeTx.wait();
       console.log(`File permission added for contract ${contractAddress}`);
 
-      appendStatus(`File permission added for contract ${contractAddress}`);
-      appendStatus(`Asking DLPContract for a validation ${contractAddress}`);
+      appendStatus(`File permission added successfully`);
+      appendStatus(`Adding file to DLP contract...`);
 
       // After that user calls requestClaim(fileId) on the DLP contract to request the claim
-
-      // {
-      //       "inputs": [
-      //         {
-      //           "internalType": "uint256",
-      //           "name": "registryId",
-      //           "type": "uint256"
-      //         },
-      //         {
-      //           "internalType": "uint256",
-      //           "name": "proofIndex",
-      //           "type": "uint256"
-      //         }
-      //       ],
-      //       "name": "addFile",
-      //       "outputs": [],
-      //       "stateMutability": "nonpayable",
-      //       "type": "function"
-      //     },
-
       const requestClaimTx = await dlpLightContract.addFile(fileId, 1);
       await requestClaimTx.wait();
       console.log("Claim requested successfully");
 
-      setUploadState("done");
-      appendStatus("Process completed successfully");
+      setUploadState("done"); // TODO: Is this needed?
+      appendStatus("File added successfully to DLP contract, awaiting for DLP contract to validate the file and send the reward");
 
-      // DLP contract will get the file from the DataRegistry contract by calling getFile(fileId) and get back encryptedDataUrl, encryptedKey and proof
-      // DLP contract decrypts the file using the encryptedKey and verifies the proof and file hash and calculates the reward
-      // DLP contract issues DLP token as a reward
+
     } catch (error) {
       console.error("Error encrypting and uploading file:", error);
       setUploadState("initial");
@@ -453,9 +433,9 @@ export default function Page() {
               {statusLog.length > 0 && (
                 <Stack gap="md">
                   <Title order={6}>Status Log:</Title>
-                  <Paper p="sm" style={{ maxHeight: '200px', overflow: 'auto' }}>
+                  <Paper p="sm">
                     {statusLog.map((status, index) => (
-                      <Text key={index}>{status}</Text>
+                      <Text key={index} mb={6}>— {status}</Text>
                     ))}
                   </Paper>
                 </Stack>
