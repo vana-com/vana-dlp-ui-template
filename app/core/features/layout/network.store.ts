@@ -8,14 +8,6 @@ type NetworkState = {
   network: Network;
   setNetwork: (network: Network) => void;
 
-  contract: string;
-  dataRegistryContract: string;
-  teePoolContract: string;
-
-  setContract: (contract: string) => void;
-  setDataRegistryContract: (dataRegistryContract: string) => void;
-  setTeePoolContract: (teePoolContract: string) => void;
-
   publicKeyBase64: string;
   setPublicKeyBase64: (publicKeyBase64: string) => void;
 
@@ -41,13 +33,6 @@ export const useNetworkStore = create<NetworkState>()(
           });
         },
 
-        contract: defaultNetworkConfig.contract,
-        dataRegistryContract: defaultNetworkConfig.dataRegistryContract,
-        teePoolContract: defaultNetworkConfig.teePoolContract,
-        setContract: (contract) => set({ contract }),
-        setTeePoolContract: (teePoolContract) => set({ teePoolContract }),
-        setDataRegistryContract: (dataRegistryContract) => set({ dataRegistryContract }),
-
         publicKeyBase64: config.publicKeyBase64,
         setPublicKeyBase64: (publicKeyBase64) => set({ publicKeyBase64 }),
 
@@ -60,25 +45,6 @@ export const useNetworkStore = create<NetworkState>()(
     },
     {
       name: "network-storage",
-      onRehydrateStorage: (state) => {
-        console.log(state.contract);
-        if (!state.contract) {
-          state.setContract(defaultNetworkConfig.contract);
-        }
-
-        // return state;
-      },
-      // We could include only specific fields to be persisted if necessary
-      // partialize: state => ({
-      //   network: state.network,
-      //   contract: state.contract,
-      //   publicKeyBase64: state.publicKeyBase64,
-      //   chainId: state.chainId,
-      //   rpcUrl: state.rpcUrl,
-      //   chainName: state.chainName,
-      //   explorerUrl: state.explorerUrl,
-      //   currency: state.currency,
-      // })
     }
   )
 );
