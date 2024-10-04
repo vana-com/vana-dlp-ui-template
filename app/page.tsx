@@ -235,7 +235,7 @@ export default function Page() {
 
       // Data Registry contract
       const dataRegistryContractABI = [...DataRegistryImplementation.abi];
-      const dataRegsitryContract = new ethers.Contract(
+      const dataRegistryContract = new ethers.Contract(
         dataRegistryContractAddress,
         dataRegistryContractABI,
         signer
@@ -252,18 +252,24 @@ export default function Page() {
       // Get base64 encoded signature
       const encryptedKey = btoa(encryptedSignature as string);
 
-      // User adds file to the DataRegistry contract by calling addFile(encryptedDataUrl)
-      appendStatus("Adding file to DataRegistry contract. Requesting user for permission to add file to the contract...");
-      const tx = await dataRegsitryContract.addFile(encryptedDataUrl);
+      // User adds file to the DataRegistry contract and sets permissions in one transaction
+      appendStatus("Adding file to DataRegistry contract with permissions. Requesting user for permission...");
+      const permissions = [
+        {
+          account: contractAddress,
+          key: encryptedKey
+        }
+      ];
+      const tx = await dataRegistryContract.addFileWithPermissions(encryptedDataUrl, walletAddress, permissions);
       const receipt = await tx.wait();
-      console.log("File added, transaction receipt:", receipt.hash);
+      console.log("File added with permissions, transaction receipt:", receipt.hash);
 
       // Get file id from receipt transaction log
       const log = receipt.logs[0];
       const fileId = Number(log.args[0]);
       console.log("File ID:", fileId);
       setFileId(fileId);
-      appendStatus(`File added to DataRegistry with id '${fileId}'. Requesting TEE fees from the TeePool contract...`);
+      appendStatus(`File added to DataRegistry contract with permissions, file id is '${fileId}'. Requesting TEE fees from the TeePool contract...`);
 
       setUploadState("done");
       console.log(`File uploaded with ID: ${fileId}`);
@@ -271,7 +277,6 @@ export default function Page() {
       // TEE Proof
       const teeFee = await teePoolContract.teeFee();
       console.log("TEE Fee:", teeFee.toString());
-
       appendStatus(`TEE fee fetched: ${teeFee.toString()} VANA for running the contribution proof on the TEE`);
 
       // Start listening for JobSubmitted event
@@ -347,21 +352,7 @@ export default function Page() {
       );
       const contributionProofData = await contributionProofResponse.json();
       console.log("Contribution proof response:", contributionProofData);
-
-      appendStatus(`Contribution proof response received from TEE.`);
-      appendStatus(`Adding file permissions to DataRegistry contract...`);
-
-      // User now authorize DLPLight contract to access the file data by calling addFilePermission(fileId, walletAddress, encryptedKey)
-      const authorizeTx = await dataRegsitryContract.addFilePermission(
-        fileId,
-        contractAddress,
-        encryptedKey
-      );
-      await authorizeTx.wait();
-      console.log(`File permission added for contract ${contractAddress}`);
-
-      appendStatus(`File permission added successfully`);
-      appendStatus(`Adding file to DLP contract...`);
+      appendStatus(`Contribution proof response received from TEE. Asking user for a permission to add file to DLP contract...`);
 
       // After that user calls requestClaim(fileId) on the DLP contract to request the claim
       const requestClaimTx = await dlpLightContract.addFile(fileId, 1);
@@ -379,11 +370,6 @@ export default function Page() {
       handleError();
     }
   };
-
-  // const handleOpenDropbox = async () => {
-  //   const folderLink = `https://www.dropbox.com/home/${config.dropboxFolderName}`;
-  //   window.open(folderLink, "_blank");
-  // };
 
   const handleDownload = async () => {
     if (!shareUrl) return;
