@@ -367,7 +367,7 @@ export default function Page() {
       console.log("Claim requested successfully");
 
       setUploadState("done"); // TODO: Is this needed?
-      appendStatus("File added successfully to DLP contract, awaiting for DLP contract to validate the file and send the reward");
+      appendStatus("Reward received successfully");
 
 
     } catch (error) {
