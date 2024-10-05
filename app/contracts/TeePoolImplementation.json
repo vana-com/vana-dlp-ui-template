@@ -2,6 +2,11 @@
   "contractName": "TeePoolImplementation",
   "abi": [
     {
+      "inputs": [],
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    },
+    {
       "inputs": [
         {
           "internalType": "address",
@@ -10,6 +15,11 @@
         }
       ],
       "name": "AddressEmptyCode",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "CancelDelayNotPassed",
       "type": "error"
     },
     {
@@ -55,6 +65,11 @@
     },
     {
       "inputs": [],
+      "name": "InvalidJobStatus",
+      "type": "error"
+    },
+    {
+      "inputs": [],
       "name": "JobCompleted",
       "type": "error"
     },
@@ -66,6 +81,11 @@
     {
       "inputs": [],
       "name": "NotInitializing",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "NotJobOwner",
       "type": "error"
     },
     {
@@ -108,6 +128,11 @@
     {
       "inputs": [],
       "name": "TeeNotActive",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "TransferFailed",
       "type": "error"
     },
     {
@@ -156,6 +181,19 @@
         }
       ],
       "name": "Initialized",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "uint256",
+          "name": "jobId",
+          "type": "uint256"
+        }
+      ],
+      "name": "JobCanceled",
       "type": "event"
     },
     {
@@ -240,7 +278,7 @@
         {
           "indexed": true,
           "internalType": "address",
-          "name": "atestator",
+          "name": "attestator",
           "type": "address"
         },
         {
@@ -382,7 +420,7 @@
               "type": "uint256"
             }
           ],
-          "internalType": "struct ITeePool.TeeDetails",
+          "internalType": "struct ITeePool.TeeInfo",
           "name": "",
           "type": "tuple"
         }
@@ -426,7 +464,7 @@
                 },
                 {
                   "internalType": "uint256",
-                  "name": "timestamp",
+                  "name": "dlpId",
                   "type": "uint256"
                 },
                 {
@@ -480,6 +518,32 @@
     },
     {
       "inputs": [],
+      "name": "cancelDelay",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "jobId",
+          "type": "uint256"
+        }
+      ],
+      "name": "cancelJob",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
       "name": "claim",
       "outputs": [],
       "stateMutability": "nonpayable",
@@ -509,11 +573,35 @@
           "internalType": "address",
           "name": "dataRegistryAddress",
           "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "initialCancelDelay",
+          "type": "uint256"
         }
       ],
       "name": "initialize",
       "outputs": [],
       "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "teeAddress",
+          "type": "address"
+        }
+      ],
+      "name": "isTee",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
       "type": "function"
     },
     {
@@ -554,7 +642,7 @@
               "type": "uint256"
             }
           ],
-          "internalType": "struct ITeePool.TeeDetails",
+          "internalType": "struct ITeePool.TeeInfo",
           "name": "",
           "type": "tuple"
         }
@@ -588,6 +676,16 @@
               "internalType": "enum ITeePool.JobStatus",
               "name": "status",
               "type": "uint8"
+            },
+            {
+              "internalType": "uint256",
+              "name": "addedTimestamp",
+              "type": "uint256"
+            },
+            {
+              "internalType": "address",
+              "name": "ownerAddress",
+              "type": "address"
             }
           ],
           "internalType": "struct ITeePool.Job",
@@ -704,6 +802,19 @@
       "type": "function"
     },
     {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "fileId",
+          "type": "uint256"
+        }
+      ],
+      "name": "submitJob",
+      "outputs": [],
+      "stateMutability": "payable",
+      "type": "function"
+    },
+    {
       "inputs": [],
       "name": "teeFee",
       "outputs": [
@@ -767,7 +878,7 @@
               "type": "uint256"
             }
           ],
-          "internalType": "struct ITeePool.TeeDetails",
+          "internalType": "struct ITeePool.TeeInfo",
           "name": "",
           "type": "tuple"
         }
@@ -813,7 +924,7 @@
               "type": "uint256"
             }
           ],
-          "internalType": "struct ITeePool.TeeDetails",
+          "internalType": "struct ITeePool.TeeInfo",
           "name": "",
           "type": "tuple"
         }
@@ -850,6 +961,19 @@
     {
       "inputs": [],
       "name": "unpause",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "newCancelDelay",
+          "type": "uint256"
+        }
+      ],
+      "name": "updateCancelDelay",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
