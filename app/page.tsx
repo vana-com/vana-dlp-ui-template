@@ -34,7 +34,7 @@ import DataRegistryImplementation from "@/app/contracts/DataRegistryImplementati
 import { ConnectStep } from "./home/components/connect";
 import { Success } from "./home/components/success";
 import { UploadState } from "./home/components/upload";
-import { UploadedFileState } from "./home/components/uploaded";
+// import { UploadedFileState } from "./home/components/uploaded";
 import { UploadingState } from "./home/components/uploading";
 import { config } from "@/app/config";
 
@@ -276,8 +276,8 @@ export default function Page() {
 
       // TEE Proof
       const teeFee = await teePoolContract.teeFee();
-      console.log("TEE Fee:", teeFee.toString());
-      appendStatus(`TEE fee fetched: ${teeFee.toString()} VANA for running the contribution proof on the TEE`);
+      const teeFeeInVana = ethers.formatUnits(teeFee, 18);
+      appendStatus(`TEE fee fetched: ${teeFeeInVana} VANA for running the contribution proof on the TEE`);
 
       // Start listening for JobSubmitted event
       const jobSubmittedPromise = new Promise((resolve) => {
@@ -295,7 +295,7 @@ export default function Page() {
 
       // Request contribution proof from a TEE. This starts the validation process on the TEE
       const contributionProofTx = await teePoolContract.requestContributionProof(fileId, {
-        value: ethers.parseUnits(teeFee.toString(), 18),
+        value: teeFee,
       });
       await contributionProofTx.wait();
 
@@ -405,16 +405,16 @@ export default function Page() {
 
               {uploadState === "loading" && file && <UploadingState fileName={file.name} fileSize={file.size} />}
 
-              {uploadState === "done" &&
-                encryptedFile &&
-                uploadedFileMetadata && (
-                  <UploadedFileState
-                    fileName={uploadedFileMetadata.name ?? "encrypted_file"}
-                    fileSize={uploadedFileMetadata.size ?? encryptedFile.size}
-                    fileId={fileId}
-                    onDownload={handleDownload}
-                  />
-                )}
+              {/*{uploadState === "done" &&*/}
+              {/*  encryptedFile &&*/}
+              {/*  uploadedFileMetadata && (*/}
+              {/*    <UploadedFileState*/}
+              {/*      fileName={uploadedFileMetadata.name ?? "encrypted_file"}*/}
+              {/*      fileSize={uploadedFileMetadata.size ?? encryptedFile.size}*/}
+              {/*      fileId={fileId}*/}
+              {/*      onDownload={handleDownload}*/}
+              {/*    />*/}
+              {/*  )}*/}
 
               {statusLog.length > 0 && (
                 <Stack gap="md">
