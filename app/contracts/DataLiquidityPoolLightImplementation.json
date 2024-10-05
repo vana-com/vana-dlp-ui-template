@@ -2,6 +2,11 @@
   "contractName": "DataLiquidityPoolLightImplementation",
   "abi": [
     {
+      "inputs": [],
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    },
+    {
       "inputs": [
         {
           "internalType": "address",
@@ -88,7 +93,7 @@
     },
     {
       "inputs": [],
-      "name": "InvalidFileStatus",
+      "name": "InvalidAttestator",
       "type": "error"
     },
     {
@@ -98,7 +103,7 @@
     },
     {
       "inputs": [],
-      "name": "NotAllowed",
+      "name": "InvalidProof",
       "type": "error"
     },
     {
@@ -161,30 +166,6 @@
       "type": "error"
     },
     {
-      "inputs": [],
-      "name": "WithdrawNotAllowed",
-      "type": "error"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": true,
-          "internalType": "address",
-          "name": "contributorAddress",
-          "type": "address"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "fileId",
-          "type": "uint256"
-        }
-      ],
-      "name": "FileAdded",
-      "type": "event"
-    },
-    {
       "anonymous": false,
       "inputs": [
         {
@@ -234,6 +215,19 @@
         }
       ],
       "name": "Initialized",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "string",
+          "name": "newMasterKey",
+          "type": "string"
+        }
+      ],
+      "name": "MasterKeyUpdated",
       "type": "event"
     },
     {
@@ -292,6 +286,50 @@
       "inputs": [
         {
           "indexed": false,
+          "internalType": "string",
+          "name": "newProofInstruction",
+          "type": "string"
+        }
+      ],
+      "name": "ProofInstructionUpdated",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "contributorAddress",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "uint256",
+          "name": "fileId",
+          "type": "uint256"
+        },
+        {
+          "indexed": true,
+          "internalType": "uint256",
+          "name": "proofIndex",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "rewardAmount",
+          "type": "uint256"
+        }
+      ],
+      "name": "RewardRequested",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
           "internalType": "address",
           "name": "account",
           "type": "address"
@@ -337,24 +375,6 @@
       "inputs": [
         {
           "internalType": "uint256",
-          "name": "registryId",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "proofIndex",
-          "type": "uint256"
-        }
-      ],
-      "name": "addFile",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "uint256",
           "name": "contributorsRewardAmount",
           "type": "uint256"
         }
@@ -387,16 +407,6 @@
               "type": "uint256"
             },
             {
-              "internalType": "enum IDataLiquidityPoolLight.FileStatus",
-              "name": "status",
-              "type": "uint8"
-            },
-            {
-              "internalType": "uint256",
-              "name": "registryId",
-              "type": "uint256"
-            },
-            {
               "internalType": "uint256",
               "name": "timestamp",
               "type": "uint256"
@@ -410,14 +420,9 @@
               "internalType": "uint256",
               "name": "rewardAmount",
               "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "rewardWithdrawn",
-              "type": "uint256"
             }
           ],
-          "internalType": "struct IDataLiquidityPoolLight.FileResponse",
+          "internalType": "struct IDataLiquidityPool.FileResponse",
           "name": "",
           "type": "tuple"
         }
@@ -444,11 +449,11 @@
             },
             {
               "internalType": "uint256",
-              "name": "fileIdsCount",
+              "name": "filesListCount",
               "type": "uint256"
             }
           ],
-          "internalType": "struct IDataLiquidityPoolLight.ContributorInfoResponse",
+          "internalType": "struct IDataLiquidityPool.ContributorInfoResponse",
           "name": "",
           "type": "tuple"
         }
@@ -475,11 +480,11 @@
             },
             {
               "internalType": "uint256",
-              "name": "fileIdsCount",
+              "name": "filesListCount",
               "type": "uint256"
             }
           ],
-          "internalType": "struct IDataLiquidityPoolLight.ContributorInfoResponse",
+          "internalType": "struct IDataLiquidityPool.ContributorInfoResponse",
           "name": "",
           "type": "tuple"
         }
@@ -508,19 +513,6 @@
           "internalType": "contract IDataRegistry",
           "name": "",
           "type": "address"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "fileRewardDelay",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
         }
       ],
       "stateMutability": "view",
@@ -557,16 +549,6 @@
               "type": "uint256"
             },
             {
-              "internalType": "enum IDataLiquidityPoolLight.FileStatus",
-              "name": "status",
-              "type": "uint8"
-            },
-            {
-              "internalType": "uint256",
-              "name": "registryId",
-              "type": "uint256"
-            },
-            {
               "internalType": "uint256",
               "name": "timestamp",
               "type": "uint256"
@@ -580,14 +562,9 @@
               "internalType": "uint256",
               "name": "rewardAmount",
               "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "rewardWithdrawn",
-              "type": "uint256"
             }
           ],
-          "internalType": "struct IDataLiquidityPoolLight.FileResponse",
+          "internalType": "struct IDataLiquidityPool.FileResponse",
           "name": "",
           "type": "tuple"
         }
@@ -596,8 +573,27 @@
       "type": "function"
     },
     {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "index",
+          "type": "uint256"
+        }
+      ],
+      "name": "filesListAt",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
       "inputs": [],
-      "name": "filesCount",
+      "name": "filesListCount",
       "outputs": [
         {
           "internalType": "uint256",
@@ -618,9 +614,9 @@
               "type": "address"
             },
             {
-              "internalType": "string",
-              "name": "name",
-              "type": "string"
+              "internalType": "address",
+              "name": "tokenAddress",
+              "type": "address"
             },
             {
               "internalType": "address",
@@ -629,12 +625,22 @@
             },
             {
               "internalType": "address",
-              "name": "tokenAddress",
+              "name": "teePoolAddress",
               "type": "address"
             },
             {
               "internalType": "string",
+              "name": "name",
+              "type": "string"
+            },
+            {
+              "internalType": "string",
               "name": "masterKey",
+              "type": "string"
+            },
+            {
+              "internalType": "string",
+              "name": "proofInstruction",
               "type": "string"
             },
             {
@@ -643,25 +649,12 @@
               "type": "uint256"
             }
           ],
-          "internalType": "struct DataLiquidityPoolLightImplementation.InitParams",
+          "internalType": "struct DataLiquidityPoolImplementation.InitParams",
           "name": "params",
           "type": "tuple"
         }
       ],
       "name": "initialize",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "fileId",
-          "type": "uint256"
-        }
-      ],
-      "name": "invalidateFile",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
@@ -740,6 +733,19 @@
     },
     {
       "inputs": [],
+      "name": "proofInstruction",
+      "outputs": [
+        {
+          "internalType": "string",
+          "name": "",
+          "type": "string"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
       "name": "proxiableUUID",
       "outputs": [
         {
@@ -771,10 +777,17 @@
           "type": "uint256"
         }
       ],
-      "name": "testSignature",
+      "name": "requestReward",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "teePool",
       "outputs": [
         {
-          "internalType": "address",
+          "internalType": "contract ITeePool",
           "name": "",
           "type": "address"
         }
@@ -844,6 +857,45 @@
     {
       "inputs": [
         {
+          "internalType": "string",
+          "name": "newProofInstruction",
+          "type": "string"
+        }
+      ],
+      "name": "updateMasterKey",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "string",
+          "name": "newProofInstruction",
+          "type": "string"
+        }
+      ],
+      "name": "updateProofInstruction",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "newTeePool",
+          "type": "address"
+        }
+      ],
+      "name": "updateTeePool",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
           "internalType": "address",
           "name": "newImplementation",
           "type": "address"
@@ -857,19 +909,6 @@
       "name": "upgradeToAndCall",
       "outputs": [],
       "stateMutability": "payable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "fileId",
-          "type": "uint256"
-        }
-      ],
-      "name": "validateFile",
-      "outputs": [],
-      "stateMutability": "nonpayable",
       "type": "function"
     },
     {
