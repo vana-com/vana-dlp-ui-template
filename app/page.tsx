@@ -27,7 +27,7 @@ import { useDisclosure } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 import { ethers } from "ethers";
 import * as openpgp from "openpgp";
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import DataLiquidityPool from "@/app/contracts/DataLiquidityPoolLightImplementation.json";
 import TeePoolImplementation from "@/app/contracts/TeePoolImplementation.json";
 import DataRegistryImplementation from "@/app/contracts/DataRegistryImplementation.json";
@@ -37,6 +37,7 @@ import { UploadState } from "./home/components/upload";
 // import { UploadedFileState } from "./home/components/uploaded";
 import { UploadingState } from "./home/components/uploading";
 import { config } from "@/app/config";
+import { UploadedFileState } from "@/app/home/components/uploaded";
 
 const FIXED_MESSAGE = "Please sign to retrieve your encryption key";
 
@@ -75,8 +76,6 @@ export default function Page() {
 
   const [file, setFile] = useState<File | null>(null);
   const [encryptedFile, setEncryptedFile] = useState<Blob | null>(null);
-
-  const eventListenerRef = useRef<JobSubmittedListener | null>(null);
 
   const appendStatus = (newStatus: string) => {
     setStatusLog(prevLog => [...prevLog, newStatus]);
@@ -316,7 +315,7 @@ export default function Page() {
       appendStatus(`Waiting for JobSubmitted event from TEE Pool contract...`);
       const { jobId, teeDetails } = await jobSubmittedPromise;
 
-      appendStatus(`JobSubmitted event received. JobID: ${jobId}, TEE details: ${JSON.stringify(teeDetails)}`);
+      appendStatus(`JobSubmitted event received. JobID: ${jobId}`);
 
       console.log("TEE Details:", teeDetails);
       console.log(
@@ -360,10 +359,10 @@ export default function Page() {
       );
       const contributionProofData = await contributionProofResponse.json();
       console.log("Contribution proof response:", contributionProofData);
-      appendStatus(`Contribution proof response received from TEE. Asking user for a permission to add file to DLP contract...`);
+      appendStatus(`Contribution proof response received from TEE. Requesting a reward...`);
 
       // After that user calls requestClaim(fileId) on the DLP contract to request the claim
-      const requestClaimTx = await dlpLightContract.addFile(fileId, 1);
+      const requestClaimTx = await dlpLightContract.requestReward(fileId, 1);
       await requestClaimTx.wait();
       console.log("Claim requested successfully");
 
@@ -413,16 +412,16 @@ export default function Page() {
 
               {uploadState === "loading" && file && <UploadingState fileName={file.name} fileSize={file.size} />}
 
-              {/*{uploadState === "done" &&*/}
-              {/*  encryptedFile &&*/}
-              {/*  uploadedFileMetadata && (*/}
-              {/*    <UploadedFileState*/}
-              {/*      fileName={uploadedFileMetadata.name ?? "encrypted_file"}*/}
-              {/*      fileSize={uploadedFileMetadata.size ?? encryptedFile.size}*/}
-              {/*      fileId={fileId}*/}
-              {/*      onDownload={handleDownload}*/}
-              {/*    />*/}
-              {/*  )}*/}
+              {uploadState === "done" &&
+                encryptedFile &&
+                uploadedFileMetadata && (
+                  <UploadedFileState
+                    fileName={uploadedFileMetadata.name ?? "encrypted_file"}
+                    fileSize={uploadedFileMetadata.size ?? encryptedFile.size}
+                    fileId={fileId}
+                    onDownload={handleDownload}
+                  />
+                )}
 
               {statusLog.length > 0 && (
                 <Stack gap="md">
