@@ -28,7 +28,9 @@ export const uploadFileToDropbox = async (
     token,
     response.result.path_lower as string
   );
-  const etag = await getEtag(shareLink);
+  // TODO: This is wrong, try to get the ETag from the header of response to the share link or /2/sharing/get_shared_link_metadata
+  // const etag = await getEtag(shareLink);
+  const etag = null;
 
   return { ...response.result, etag };
 };
