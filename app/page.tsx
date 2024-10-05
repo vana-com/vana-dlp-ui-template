@@ -82,36 +82,60 @@ export default function Page() {
     setStatusLog(prevLog => [...prevLog, newStatus]);
   };
 
+  const TIMEOUT_DURATION = 120000; // 120 seconds timeout
+
   const listenForJobSubmittedEvent = (
-    teePoolContract: ethers.Contract
-  ): Promise<any> => {
-    return new Promise((resolve) => {
-      // Remove previous listener if it exists
-      if (eventListenerRef.current) {
-        teePoolContract.off("JobSubmitted", eventListenerRef.current);
-      }
+    teePoolContract: ethers.Contract,
+    expectedFileId: number
+  ): { promise: Promise<{ jobId: number; teeDetails: any }>; stopListening: () => void } => {
+    let resolvePromise: (value: { jobId: number; teeDetails: any }) => void;
+    let rejectPromise: (reason?: any) => void;
+    let timeoutId: NodeJS.Timeout;
 
-      // Create new listener
-      const listener: JobSubmittedListener = async (
-        jobId,
-        fileId,
-        bidAmount,
-        event
-      ) => {
-        console.log(
-          `New job submitted: JobID ${jobId}, FileID ${fileId}, Bid Amount ${bidAmount}`
-        );
-        const jobIdNumber = Number(jobId);
-        const details = await getTeeDetails(teePoolContract, jobIdNumber);
-        resolve(details);
-      };
-
-      // Set up the event listener
-      teePoolContract.on("JobSubmitted", listener);
-
-      // Store the listener reference for future cleanup
-      eventListenerRef.current = listener;
+    const promise = new Promise<{ jobId: number; teeDetails: any }>((resolve, reject) => {
+      resolvePromise = resolve;
+      rejectPromise = reject;
     });
+
+    const listener = async (jobId: ethers.BigNumberish, fileId: ethers.BigNumberish, bidAmount: ethers.BigNumberish, event: any) => {
+      console.log(`Event received: JobID ${jobId}, FileID ${fileId}, Bid Amount ${bidAmount}`);
+      appendStatus(`Event received: JobID ${jobId}, FileID ${fileId}, Bid Amount ${bidAmount}`);
+
+      if (Number(fileId) === expectedFileId) {
+        clearTimeout(timeoutId);
+        teePoolContract.off("JobSubmitted", listener);
+
+        const jobIdNumber = Number(jobId);
+        try {
+          const details = await getTeeDetails(teePoolContract, jobIdNumber);
+          resolvePromise({ jobId: jobIdNumber, teeDetails: details });
+        } catch (error: any) {
+          console.error("Error fetching TEE details:", error);
+          appendStatus(`Error fetching TEE details: ${error.message}`);
+          rejectPromise(error);
+        }
+      } else {
+        console.log(`Received event for different file ID. Expected: ${expectedFileId}, Received: ${fileId}`);
+        appendStatus(`Received event for different file ID. Expected: ${expectedFileId}, Received: ${fileId}`);
+      }
+    };
+
+    teePoolContract.on("JobSubmitted", listener);
+    appendStatus(`Started listening for JobSubmitted event for FileID: ${expectedFileId}`);
+
+    timeoutId = setTimeout(() => {
+      teePoolContract.off("JobSubmitted", listener);
+      const timeoutError = new Error("Timeout waiting for JobSubmitted event");
+      appendStatus(`Error: ${timeoutError.message}`);
+      rejectPromise(timeoutError);
+    }, TIMEOUT_DURATION);
+
+    const stopListening = () => {
+      clearTimeout(timeoutId);
+      teePoolContract.off("JobSubmitted", listener);
+    };
+
+    return { promise, stopListening };
   };
 
   const getTeeDetails = async (
@@ -279,38 +303,21 @@ export default function Page() {
       const teeFeeInVana = ethers.formatUnits(teeFee, 18);
       appendStatus(`TEE fee fetched: ${teeFeeInVana} VANA for running the contribution proof on the TEE`);
 
-      // Start listening for JobSubmitted event
-      const jobSubmittedPromise = new Promise((resolve) => {
-        const listener = (jobId: number, fileId: number, bidAmount: number, event: any) => {
-          console.log(`New job submitted: JobID ${jobId}, FileID ${fileId}, Bid Amount ${bidAmount}`);
+      appendStatus(`Starting to listen for JobSubmitted event for FileID: ${fileId}`);
+      const { promise: jobSubmittedPromise, stopListening } = listenForJobSubmittedEvent(teePoolContract, fileId);
 
-          // TODO: Make sure it's only resolve with a current file ID, otherwise it might collide with other file uploads
-
-          resolve({ jobId: Number(jobId), event });
-        };
-        teePoolContract.on("JobSubmitted", listener);
-      });
-
-      appendStatus(`Requesting contribution proof from TEE...`);
-
-      // Request contribution proof from a TEE. This starts the validation process on the TEE
+      appendStatus(`Requesting contribution proof from TEE for FileID: ${fileId}...`);
       const contributionProofTx = await teePoolContract.requestContributionProof(fileId, {
         value: teeFee,
       });
-      await contributionProofTx.wait();
+      const contributionProofReceipt = await contributionProofTx.wait();
+      appendStatus(`Contribution proof requested. Transaction hash: ${contributionProofReceipt.hash}`);
 
-      appendStatus(`Contribution proof requested. Waiting for JobSubmitted event from TEE Pool contract...`);
+      appendStatus(`Waiting for JobSubmitted event from TEE Pool contract...`);
+      const { jobId, teeDetails } = await jobSubmittedPromise;
 
-      console.log("Contribution proof requested");
+      appendStatus(`JobSubmitted event received. JobID: ${jobId}, TEE details: ${JSON.stringify(teeDetails)}`);
 
-      // Wait for the JobSubmitted event
-      const { jobId, event } = await jobSubmittedPromise as any;
-
-      appendStatus(`Requesting tee details for JobID '${jobId}'...`);
-
-      // Get TEE details
-      const teeDetails = await getTeeDetails(teePoolContract, jobId);
-      appendStatus(`TEE details fetched for JobID '${jobId}'`);
       console.log("TEE Details:", teeDetails);
       console.log(
         "TODO: Implement query to TEE Attestation URL:",
@@ -324,6 +331,7 @@ export default function Page() {
 
       // User Sends POST request to TEE /contribution-proofs endpoint with fileId and encryptedFileKey
       appendStatus(`Sending contribution proof request to TEE`);
+
       // TODO: Move to separate function
       const contributionProofResponse = await fetch(
         `${teeDetails.url}/RunProof`,
