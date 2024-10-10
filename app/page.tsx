@@ -41,13 +41,6 @@ import { UploadedFileState } from "@/app/home/components/uploaded";
 
 const FIXED_MESSAGE = "Please sign to retrieve your encryption key";
 
-type JobSubmittedListener = (
-  jobId: ethers.BigNumberish,
-  fileId: ethers.BigNumberish,
-  bidAmount: ethers.BigNumberish,
-  event: any
-) => void;
-
 export default function Page() {
   const [statusLog, setStatusLog] = useState<string[]>(["Please select a file to start contribution process"]);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
@@ -83,75 +76,54 @@ export default function Page() {
 
   const TIMEOUT_DURATION = 120000; // 120 seconds timeout
 
-  const listenForJobSubmittedEvent = (
-    teePoolContract: ethers.Contract,
-    expectedFileId: number
-  ): { promise: Promise<{ jobId: number; teeDetails: any }>; stopListening: () => void } => {
-    let resolvePromise: (value: { jobId: number; teeDetails: any }) => void;
-    let rejectPromise: (reason?: any) => void;
-    let timeoutId: NodeJS.Timeout;
-
-    const promise = new Promise<{ jobId: number; teeDetails: any }>((resolve, reject) => {
-      resolvePromise = resolve;
-      rejectPromise = reject;
-    });
-
-    const listener = async (jobId: ethers.BigNumberish, fileId: ethers.BigNumberish, bidAmount: ethers.BigNumberish, event: any) => {
-      console.log(`Event received: JobID ${jobId}, FileID ${fileId}, Bid Amount ${bidAmount}`);
-      appendStatus(`Event received: JobID ${jobId}, FileID ${fileId}, Bid Amount ${bidAmount}`);
-
-      if (Number(fileId) === expectedFileId) {
-        clearTimeout(timeoutId);
-        teePoolContract.off("JobSubmitted", listener);
-
-        const jobIdNumber = Number(jobId);
-        try {
-          const details = await getTeeDetails(teePoolContract, jobIdNumber);
-          resolvePromise({ jobId: jobIdNumber, teeDetails: details });
-        } catch (error: any) {
-          console.error("Error fetching TEE details:", error);
-          appendStatus(`Error fetching TEE details: ${error.message}`);
-          rejectPromise(error);
-        }
-      } else {
-        console.log(`Received event for different file ID. Expected: ${expectedFileId}, Received: ${fileId}`);
-        appendStatus(`Received event for different file ID. Expected: ${expectedFileId}, Received: ${fileId}`);
-      }
-    };
-
-    teePoolContract.on("JobSubmitted", listener);
-    appendStatus(`Started listening for JobSubmitted event for FileID: ${expectedFileId}`);
-
-    timeoutId = setTimeout(() => {
-      teePoolContract.off("JobSubmitted", listener);
-      const timeoutError = new Error("Timeout waiting for JobSubmitted event");
-      appendStatus(`Error: ${timeoutError.message}`);
-      rejectPromise(timeoutError);
-    }, TIMEOUT_DURATION);
-
-    const stopListening = () => {
-      clearTimeout(timeoutId);
-      teePoolContract.off("JobSubmitted", listener);
-    };
-
-    return { promise, stopListening };
-  };
-
   const getTeeDetails = async (
     teePoolContract: ethers.Contract,
     jobId: number
   ) => {
     try {
-      const details = await teePoolContract.jobTee(jobId);
-      console.log("TEE Details:", details);
-      return details;
+      const job = await teePoolContract.jobs(jobId);
+      console.log("Job Details:", job);
+
+      // Fetch the TEE info using the teeAddress
+      const teeInfo = await teePoolContract.tees(job.teeAddress);
+      console.log("TEE Info:", teeInfo);
+
+      return { ...job, teeUrl: teeInfo.url };
     } catch (error) {
-      console.error("Error fetching TEE details:", error);
+      console.error("Error fetching job details:", error);
       notifications.show({
         color: "red",
         title: "Error",
-        message: "Failed to fetch TEE details. Please try again.",
+        message: "Failed to fetch job details. Please try again.",
       });
+      throw error;
+    }
+  };
+
+  const fileJobIds = async (
+    teePoolContract: ethers.Contract,
+    fileId: number
+  ) => {
+    try {
+      const jobIds = await teePoolContract.fileJobIds(fileId);
+      return jobIds.map(Number);
+    } catch (error) {
+      console.error("Error fetching file job IDs:", error);
+      throw error;
+    }
+  };
+
+  const teeJobIdsPaginated = async (
+    teePoolContract: ethers.Contract,
+    teeAddress: string,
+    start: number,
+    end: number
+  ) => {
+    try {
+      const jobIds = await teePoolContract.teeJobIdsPaginated(teeAddress, start, end);
+      return jobIds.map(Number);
+    } catch (error) {
+      console.error("Error fetching paginated TEE job IDs:", error);
       throw error;
     }
   };
@@ -302,9 +274,6 @@ export default function Page() {
       const teeFeeInVana = ethers.formatUnits(teeFee, 18);
       appendStatus(`TEE fee fetched: ${teeFeeInVana} VANA for running the contribution proof on the TEE`);
 
-      appendStatus(`Starting to listen for JobSubmitted event for FileID: ${fileId}`);
-      const { promise: jobSubmittedPromise, stopListening } = listenForJobSubmittedEvent(teePoolContract, fileId);
-
       appendStatus(`Requesting contribution proof from TEE for FileID: ${fileId}...`);
       const contributionProofTx = await teePoolContract.requestContributionProof(fileId, {
         value: teeFee,
@@ -312,20 +281,23 @@ export default function Page() {
       const contributionProofReceipt = await contributionProofTx.wait();
       appendStatus(`Contribution proof requested. Transaction hash: ${contributionProofReceipt.hash}`);
 
-      appendStatus(`Waiting for JobSubmitted event from TEE Pool contract...`);
-      const { jobId, teeDetails } = await jobSubmittedPromise;
+      // Use fileJobIds to get the latest job for the file
+      const jobIds = await fileJobIds(teePoolContract, fileId);
+      const latestJobId = jobIds[jobIds.length - 1];
+      appendStatus(`Latest JobID for FileID ${fileId}: ${latestJobId}`);
 
-      appendStatus(`JobSubmitted event received. JobID: ${jobId}`);
+      const jobDetails = await getTeeDetails(teePoolContract, latestJobId);
+      appendStatus(`Job details retrieved for JobID ${latestJobId}`);
 
-      console.log("TEE Details:", teeDetails);
+      console.log("Job Details:", jobDetails);
       console.log(
         "TODO: Implement query to TEE Attestation URL:",
-        teeDetails.url
+        jobDetails.teeUrl
       );
 
       // Implement the GET request to the TEE attestation endpoint
       console.log(
-        `TODO: Implement GET request to TEE attestation endpoint ${teeDetails.url}/attestation`
+        `TODO: Implement GET request to TEE attestation endpoint ${jobDetails.teeUrl}/attestation`
       );
 
       // User Sends POST request to TEE /contribution-proofs endpoint with fileId and encryptedFileKey
@@ -333,14 +305,14 @@ export default function Page() {
 
       // TODO: Move to separate function
       const contributionProofResponse = await fetch(
-        `${teeDetails.url}/RunProof`,
+        `${jobDetails.teeUrl}/RunProof`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            job_id: jobId,
+            job_id: latestJobId,
             file_id: fileId,
             nonce: "1234",
             encryption_key: signature,
@@ -366,9 +338,8 @@ export default function Page() {
       await requestClaimTx.wait();
       console.log("Claim requested successfully");
 
-      setUploadState("done"); // TODO: Is this needed?
+      setUploadState("done");
       appendStatus("Reward received successfully");
-
 
     } catch (error) {
       console.error("Error encrypting and uploading file:", error);
