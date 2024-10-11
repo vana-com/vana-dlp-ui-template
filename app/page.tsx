@@ -26,7 +26,6 @@ import {
 import { useDisclosure } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 import { ethers } from "ethers";
-import * as openpgp from "openpgp";
 import React, { useEffect, useRef, useState } from "react";
 import DataLiquidityPool from "@/app/contracts/DataLiquidityPoolLightImplementation.json";
 import TeePoolImplementation from "@/app/contracts/TeePoolImplementation.json";
