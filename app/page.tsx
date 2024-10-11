@@ -97,34 +97,6 @@ export default function Page() {
     return encryptedHex;
   };
 
-  const decryptWithPrivateKey = async (encryptedData: string, privateKey: string): Promise<string> => {
-    // Convert the private key to bytes and remove the '0x' prefix if present
-    const privateKeyBytes = Buffer.from(privateKey.startsWith("0x") ? privateKey.slice(2) : privateKey, "hex");
-
-    // Convert the encrypted data from hex to buffer
-    const encryptedBuffer = Buffer.from(encryptedData, "hex");
-
-    // The encrypted data structure is composed of iv, ephemPublicKey, ciphertext, and mac
-    const iv = encryptedBuffer.slice(0, 16);
-    const ephemPublicKey = encryptedBuffer.slice(16, 81);
-    const ciphertext = encryptedBuffer.slice(81, encryptedBuffer.length - 32);
-    const mac = encryptedBuffer.slice(encryptedBuffer.length - 32);
-
-    // Create the object for decryption
-    const encryptedObject = {
-      iv: iv,
-      ephemPublicKey: ephemPublicKey,
-      ciphertext: ciphertext,
-      mac: mac
-    };
-
-    // Decrypt the data
-    const decryptedBuffer = await eccrypto.decrypt(privateKeyBytes, encryptedObject);
-
-    // Convert the decrypted buffer back to a string
-    return decryptedBuffer.toString();
-  };
-
   const getTeeDetails = async (
     teePoolContract: ethers.Contract,
     jobId: number
@@ -284,11 +256,6 @@ export default function Page() {
       // Encrypt the signature using the master key
       const encryptedKey = await encryptWithMasterKey(signature, masterKey);
       console.log(`encryptedKey: '${encryptedKey}'`);
-
-      // Decrypt with private key
-      const privateKey = '0xb2d61153bb3a4327a8176478...9afe74c91cfada37812147d2f';
-      const decryptedKey = await decryptWithPrivateKey(encryptedKey, privateKey);
-      console.log(`decryptedKey: '${decryptedKey}'`);
 
       // User adds file to the DataRegistry contract and sets permissions in one transaction
       appendStatus("Adding file to DataRegistry contract with permissions. Requesting user for permission...");
