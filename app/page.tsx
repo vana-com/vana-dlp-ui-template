@@ -38,6 +38,7 @@ import { UploadState } from "./home/components/upload";
 import { UploadingState } from "./home/components/uploading";
 import { config } from "@/app/config";
 import { UploadedFileState } from "@/app/home/components/uploaded";
+import * as eccrypto from "eccrypto";
 
 const FIXED_MESSAGE = "Please sign to retrieve your encryption key";
 
@@ -74,7 +75,55 @@ export default function Page() {
     setStatusLog(prevLog => [...prevLog, newStatus]);
   };
 
-  const TIMEOUT_DURATION = 120000; // 120 seconds timeout
+  /**
+   * Encrypts the given data using the provided master key (public key).
+   *
+   * @param data - The data to encrypt.
+   * @param masterKey - The hexadecimal public key for encryption.
+   * @returns The encrypted data as a hexadecimal string.
+   */
+  const encryptWithMasterKey = async (data: string, masterKey: string): Promise<string> => {
+    // Convert the public key to bytes and remove the '0x' prefix if present
+    const publicKeyBytes = Buffer.from(masterKey.startsWith("0x") ? masterKey.slice(2) : masterKey, "hex");
+
+    // If the public key is not in the uncompressed format (starts with 0x04), add it
+    const uncompressedKey = publicKeyBytes.length === 64 ? Buffer.concat([Buffer.from([4]), publicKeyBytes]) : publicKeyBytes;
+
+    // Encrypt the data
+    const encryptedBuffer = await eccrypto.encrypt(uncompressedKey, Buffer.from(data));
+
+    // Combine the encrypted components into a single buffer and return as hex
+    const encryptedHex = Buffer.concat([encryptedBuffer.iv, encryptedBuffer.ephemPublicKey, encryptedBuffer.ciphertext, encryptedBuffer.mac]).toString("hex");
+    return encryptedHex;
+  };
+
+  const decryptWithPrivateKey = async (encryptedData: string, privateKey: string): Promise<string> => {
+    // Convert the private key to bytes and remove the '0x' prefix if present
+    const privateKeyBytes = Buffer.from(privateKey.startsWith("0x") ? privateKey.slice(2) : privateKey, "hex");
+
+    // Convert the encrypted data from hex to buffer
+    const encryptedBuffer = Buffer.from(encryptedData, "hex");
+
+    // The encrypted data structure is composed of iv, ephemPublicKey, ciphertext, and mac
+    const iv = encryptedBuffer.slice(0, 16);
+    const ephemPublicKey = encryptedBuffer.slice(16, 81);
+    const ciphertext = encryptedBuffer.slice(81, encryptedBuffer.length - 32);
+    const mac = encryptedBuffer.slice(encryptedBuffer.length - 32);
+
+    // Create the object for decryption
+    const encryptedObject = {
+      iv: iv,
+      ephemPublicKey: ephemPublicKey,
+      ciphertext: ciphertext,
+      mac: mac
+    };
+
+    // Decrypt the data
+    const decryptedBuffer = await eccrypto.decrypt(privateKeyBytes, encryptedObject);
+
+    // Convert the decrypted buffer back to a string
+    return decryptedBuffer.toString();
+  };
 
   const getTeeDetails = async (
     teePoolContract: ethers.Contract,
@@ -197,22 +246,6 @@ export default function Page() {
 
       setEncryptedFile(encryptedFile);
 
-      // Encrypt the signature (symmetric key) using the DLP public key
-      if (!publicKeyBase64) {
-        setUploadState("initial");
-        console.error("Public key not found in config");
-        throw new Error("Public key not found in config");
-      }
-
-      const publicKey = await openpgp.readKey({
-        armoredKey: atob(publicKeyBase64),
-      });
-      const encryptedSignature = await openpgp.encrypt({
-        message: await openpgp.createMessage({ text: signature }),
-        encryptionKeys: publicKey,
-        format: "armored",
-      });
-
       setUploadState("done");
       appendStatus(`File uploaded to ${encryptedDataUrl}`);
 
@@ -244,8 +277,18 @@ export default function Page() {
         signer
       );
 
-      // Get base64 encoded signature
-      const encryptedKey = btoa(encryptedSignature as string);
+      // Get master key from DLP contract
+      const masterKey = await dlpLightContract.masterKey();
+      console.log("Master Key:", masterKey);
+
+      // Encrypt the signature using the master key
+      const encryptedKey = await encryptWithMasterKey(signature, masterKey);
+      console.log(`encryptedKey: '${encryptedKey}'`);
+
+      // Decrypt with private key
+      const privateKey = '0xb2d61153bb3a4327a8176478...9afe74c91cfada37812147d2f';
+      const decryptedKey = await decryptWithPrivateKey(encryptedKey, privateKey);
+      console.log(`decryptedKey: '${decryptedKey}'`);
 
       // User adds file to the DataRegistry contract and sets permissions in one transaction
       appendStatus("Adding file to DataRegistry contract with permissions. Requesting user for permission...");
@@ -323,15 +366,19 @@ export default function Page() {
               USER_EMAIL: "user123@gmail.com",
             },
             secrets: {
-              OPENAI_API_KEY: "5995fd35703fe232de27b759abe4d7f1b6f8bd97b97edd7432e3198d680870433ef3c2a4f85835fce07f6b9dee3987d7061f562c87cc446aba578cacf26ede463867c98d8a6622056c038ad42665ed26c2c7f9c5f0fe9b71c038ae9b170ddb642a633d0c3e47aec32017ab298a313c629014374883fd4267b338ca5dbde2ff5734e90fc441d37a3d6983fde2a169b1a4b0cf3fefeeba0951d5d2d2f3047e781427e7ae78baacd30aeaa7dbf12c9834825ffa34a94ecac569a08586c50facd00e80e112555e8338312b044e6889b8096c8d7fff8179c5e4f0f54d8b01cbaa0d579f6bfc4edac14cb3955b8a8cf8041d8e6f3111925030e1c9ed814ecc41d468172967b4e15e87ac76cb93d987651c4b106e596af78cd9803410bad580cd2b0adc2c8982c6380cc25a79ce085f73c2194d181a403f8162909c2e871007f717f85979e6232aa6162f91b6f3f796c2f47b00607f12c75e51ed8ec34fe772b571f5cd5dbc2f36525af0d86b6627296a4ead12c3d4b34a8512a2737023f5186b8d0963",
-              TWITTER_PASSWORD: "79a076686d33878f1a11ef62218266e51e9b17eb3e2c1485ebc1cf3b775a5dd93dc585cddeea975e4f0082310dca5630b0ca68abeb82eb4c46f486b7a9e297f2113815c11ff6ec52d11fc0f08e8e0c625b76490dcbd07e2994e9a0781d26672cd7e96c117ebb511e82e55fae5af25e21f83f14d007135823199eede5cee11aad5080bd0ec63e3885f93278baaca44bb6804429854344edb083b980d7643c37d7e59b8dcad81814b7e127b88b32d166eec3e4150fb0b30d674232b5005439163462b7c1ab14d225f50b570f10f8b5953a2db3042899bae7215c4ee5ee9905d05feebe3b9b06577189ca06f3fc583d891e40dc732cbc82e5712b5396c57e56275c66ebc75c722495a4119cb41c79c8323bb6eccb9c30129c81d00e8b369fb01b32c78c238c7f0d917786c6fecb0749535387076da39a061b3b2b131e91685b983fedc2c0c52a77dd92f71955af5f762999223d44919e2380000cfe0ef05a0bc50cc4aae808b56eaa9a2eed2c71f3137cf7b47173a7f6172ab5f75012ee46e0109b"
-            }
+              OPENAI_API_KEY:
+                "5995fd35703fe232de27b759abe4d7f1b6f8bd97b97edd7432e3198d680870433ef3c2a4f85835fce07f6b9dee3987d7061f562c87cc446aba578cacf26ede463867c98d8a6622056c038ad42665ed26c2c7f9c5f0fe9b71c038ae9b170ddb642a633d0c3e47aec32017ab298a313c629014374883fd4267b338ca5dbde2ff5734e90fc441d37a3d6983fde2a169b1a4b0cf3fefeeba0951d5d2d2f3047e781427e7ae78baacd30aeaa7dbf12c9834825ffa34a94ecac569a08586c50facd00e80e112555e8338312b044e6889b8096c8d7fff8179c5e4f0f54d8b01cbaa0d579f6bfc4edac14cb3955b8a8cf8041d8e6f3111925030e1c9ed814ecc41d468172967b4e15e87ac76cb93d987651c4b106e596af78cd9803410bad580cd2b0adc2c8982c6380cc25a79ce085f73c2194d181a403f8162909c2e871007f717f85979e6232aa6162f91b6f3f796c2f47b00607f12c75e51ed8ec34fe772b571f5cd5dbc2f36525af0d86b6627296a4ead12c3d4b34a8512a2737023f5186b8d0963",
+              TWITTER_PASSWORD:
+                "79a076686d33878f1a11ef62218266e51e9b17eb3e2c1485ebc1cf3b775a5dd93dc585cddeea975e4f0082310dca5630b0ca68abeb82eb4c46f486b7a9e297f2113815c11ff6ec52d11fc0f08e8e0c625b76490dcbd07e2994e9a0781d26672cd7e96c117ebb511e82e55fae5af25e21f83f14d007135823199eede5cee11aad5080bd0ec63e3885f93278baaca44bb6804429854344edb083b980d7643c37d7e59b8dcad81814b7e127b88b32d166eec3e4150fb0b30d674232b5005439163462b7c1ab14d225f50b570f10f8b5953a2db3042899bae7215c4ee5ee9905d05feebe3b9b06577189ca06f3fc583d891e40dc732cbc82e5712b5396c57e56275c66ebc75c722495a4119cb41c79c8323bb6eccb9c30129c81d00e8b369fb01b32c78c238c7f0d917786c6fecb0749535387076da39a061b3b2b131e91685b983fedc2c0c52a77dd92f71955af5f762999223d44919e2380000cfe0ef05a0bc50cc4aae808b56eaa9a2eed2c71f3137cf7b47173a7f6172ab5f75012ee46e0109b",
+            },
           }),
         }
       );
       const contributionProofData = await contributionProofResponse.json();
       console.log("Contribution proof response:", contributionProofData);
-      appendStatus(`Contribution proof response received from TEE. Requesting a reward...`);
+      appendStatus(
+        `Contribution proof response received from TEE. Requesting a reward...`
+      );
 
       // After that user calls requestClaim(fileId) on the DLP contract to request the claim
       const requestClaimTx = await dlpLightContract.requestReward(fileId, 1);
@@ -340,7 +387,6 @@ export default function Page() {
 
       setUploadState("done");
       appendStatus("Reward received successfully");
-
     } catch (error) {
       console.error("Error encrypting and uploading file:", error);
       setUploadState("initial");
@@ -377,18 +423,31 @@ export default function Page() {
                 Contribute data
               </Title>
 
-              {uploadState === "initial" && !isDropboxConnected && <ConnectStep />}
+              {uploadState === "initial" && !isDropboxConnected && (
+                <ConnectStep />
+              )}
 
-              {uploadState === "initial" && isDropboxConnected && <UploadState onSetFile={handleSetFile} />}
+              {uploadState === "initial" && isDropboxConnected && (
+                <UploadState onSetFile={handleSetFile} />
+              )}
 
-              {uploadState === "loading" && file && <UploadingState fileName={file.name} fileSize={file.size} />}
+              {uploadState === "loading" && file && (
+                <UploadingState
+                  fileName={file.name}
+                  fileSize={file.size}
+                />
+              )}
 
               {uploadState === "done" &&
                 encryptedFile &&
                 uploadedFileMetadata && (
                   <UploadedFileState
-                    fileName={uploadedFileMetadata.name ?? "encrypted_file"}
-                    fileSize={uploadedFileMetadata.size ?? encryptedFile.size}
+                    fileName={
+                      uploadedFileMetadata.name ?? "encrypted_file"
+                    }
+                    fileSize={
+                      uploadedFileMetadata.size ?? encryptedFile.size
+                    }
                     fileId={fileId}
                     onDownload={handleDownload}
                   />
@@ -399,7 +458,9 @@ export default function Page() {
                   <Title order={6}>Status Log:</Title>
                   <Paper p="sm">
                     {statusLog.map((status, index) => (
-                      <Text key={index} mb={6}>— {status}</Text>
+                      <Text key={index} mb={6}>
+                        — {status}
+                      </Text>
                     ))}
                   </Paper>
                 </Stack>
@@ -407,8 +468,8 @@ export default function Page() {
 
               <Dialog opened={opened} onClose={close} size="lg" p={0}>
                 <Notification color="red">
-                  There was an error trying to encode your file. Please make
-                  sure you have a wallet connected and try again.
+                  There was an error trying to encode your file. Please
+                  make sure you have a wallet connected and try again.
                 </Notification>
               </Dialog>
 
