@@ -27,7 +27,7 @@ export const ShareFileLink = () => {
       setIsSubmitting(false);
     }
     // TODO: add validation
-    router.push("/claim/success");
+    router.push("/success");
   };
 
   return (

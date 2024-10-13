@@ -1,7 +1,8 @@
 import { useNetworkStore, useWalletStore } from "@/app/core";
 import { ethers } from "ethers";
 import { useState, useEffect, useCallback } from "react";
-import DataLiquidityPool from "@/app/contracts/DataLiquidityPool.json";
+import DataLiquidityPoolLightImplementation from "@/app/contracts/DataLiquidityPoolLightImplementation.json";
+import { config } from "@/app/config";
 
 export const useFileStatus = (fileId: number | null) => {
   const [isFinalized, setIsFinalized] = useState(false);
@@ -10,7 +11,7 @@ export const useFileStatus = (fileId: number | null) => {
   const [isClaiming, setIsClaiming] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const contractAddress = useNetworkStore((state) => state.contract);
+  const contractAddress = config.smartContracts.dlp
   const walletAddress = useWalletStore((state) => state.walletAddress);
 
   const checkFileStatus = useCallback(async () => {
@@ -22,16 +23,14 @@ export const useFileStatus = (fileId: number | null) => {
     try {
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
-      const contract = new ethers.Contract(contractAddress, DataLiquidityPool.abi, signer);
-
-      const fileInfo = await contract.files(fileId);
-      setIsFinalized(fileInfo.finalized);
-      setReward(Number(ethers.formatEther(fileInfo.reward)));
-      setIsClaimable(fileInfo.finalized && fileInfo.rewardWithdrawn === BigInt(0));
+      // const contract = new ethers.Contract(contractAddress, DataLiquidityPoolLightImplementation.abi, signer);
+      // const fileInfo = await contract.files(fileId);
+      // setIsFinalized(fileInfo.status == 2);
+      // setReward(Number(ethers.formatEther(fileInfo.rewardAmount)));
+      // setIsClaimable(fileInfo.status == 2 && fileInfo.rewardWithdrawn === BigInt(0));
       setError(null);
     } catch (err) {
       console.error("Error checking file status:", err);
-      setError("Failed to check file status");
     }
   }, [fileId, contractAddress, walletAddress]);
 
@@ -53,7 +52,7 @@ export const useFileStatus = (fileId: number | null) => {
     try {
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
-      const contract = new ethers.Contract(contractAddress, DataLiquidityPool.abi, signer);
+      const contract = new ethers.Contract(contractAddress, DataLiquidityPoolLightImplementation.abi, signer);
 
       const tx = await contract.claimContributionReward(fileId);
       await tx.wait();

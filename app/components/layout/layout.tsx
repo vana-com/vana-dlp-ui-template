@@ -188,7 +188,6 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({
                     Connect
                   </Button>
                 )}
-                <SettingsButton />
               </Group>
             </Group>
           </Group>

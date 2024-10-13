@@ -8,9 +8,6 @@ type NetworkState = {
   network: Network;
   setNetwork: (network: Network) => void;
 
-  contract: string;
-  setContract: (contract: string) => void;
-
   publicKeyBase64: string;
   setPublicKeyBase64: (publicKeyBase64: string) => void;
 
@@ -36,9 +33,6 @@ export const useNetworkStore = create<NetworkState>()(
           });
         },
 
-        contract: defaultNetworkConfig.contract,
-        setContract: (contract) => set({ contract }),
-
         publicKeyBase64: config.publicKeyBase64,
         setPublicKeyBase64: (publicKeyBase64) => set({ publicKeyBase64 }),
 
@@ -51,25 +45,6 @@ export const useNetworkStore = create<NetworkState>()(
     },
     {
       name: "network-storage",
-      onRehydrateStorage: (state) => {
-        console.log(state.contract);
-        if (!state.contract) {
-          state.setContract(defaultNetworkConfig.contract);
-        }
-
-        // return state;
-      },
-      // We could include only specific fields to be persisted if necessary
-      // partialize: state => ({
-      //   network: state.network,
-      //   contract: state.contract,
-      //   publicKeyBase64: state.publicKeyBase64,
-      //   chainId: state.chainId,
-      //   rpcUrl: state.rpcUrl,
-      //   chainName: state.chainName,
-      //   explorerUrl: state.explorerUrl,
-      //   currency: state.currency,
-      // })
     }
   )
 );

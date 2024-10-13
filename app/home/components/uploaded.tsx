@@ -35,9 +35,6 @@ export const UploadedFileState = ({
           <Text size="xxs" c="gray" fw="bold">
             {formatBytes(fileSize)}
           </Text>
-          <Text size="xs" mt={8}>
-            Status: {isFinalized ? "Verified" : "Pending verification"}
-          </Text>
           {isFinalized && (
             <Text size="xs">
               Reward: {reward} tokens

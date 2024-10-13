@@ -34,7 +34,6 @@ export const uploadFile = async (
     }
     case "dropbox": {
       const metadata = await uploadFileToDropbox(file, fileName, token);
-      console.log("ETag", metadata.etag);
 
       return {
         id: metadata.path_lower as string,
@@ -47,7 +46,7 @@ export const uploadFile = async (
   }
 };
 
-export const getShareLink = (
+export const getEncryptedDataUrl = (
   token: string,
   id: string,
   provider: StorageProvider
