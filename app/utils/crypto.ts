@@ -1,3 +1,5 @@
+import * as openpgp from "openpgp";
+
 export async function clientSideEncrypt(
   file: File,
   signature: string,
