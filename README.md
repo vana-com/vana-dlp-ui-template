@@ -1,3 +1,7 @@
+**This repository is deprecated, please use [the DLP UI TEE Template repository](https://github.com/vana-com/vana-dlp-ui-tee-template) instead.**
+
+<hr>
+
 # Vana DLP UI
 This is a generic UI for uploading data to a Data Liquidity Pool (DLP). This app does the following:
 1. Connect your EVM compatible wallet, which holds some $VANA
