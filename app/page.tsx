@@ -371,6 +371,7 @@ export default function Page() {
               <Title order={5}>
                 Contribute data
               </Title>
+              <span>You can use this example <a href={"/archive.zip"} style={{textDecoration: "underline"}}>archive</a> to test the contribution process.</span>
 
               {uploadState === "initial" && !isDropboxConnected && (
                 <ConnectStep />
