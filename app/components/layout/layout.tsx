@@ -22,7 +22,6 @@ import { useDisclosure } from "@mantine/hooks";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect } from "react";
-import { SettingsButton } from "./settings-button";
 
 const links = [
   { title: "Claim", href: "/claim" },
