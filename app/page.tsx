@@ -34,10 +34,9 @@ import { UploadState } from "./home/components/upload";
 import { UploadingState } from "./home/components/uploading";
 import { config } from "@/app/config";
 import { UploadedFileState } from "@/app/home/components/uploaded";
-import * as eccrypto from "eccrypto";
+import * as eccrypto from "@toruslabs/eccrypto";
 
 import { DataLiquidityPoolImplementation, TeePoolImplementation, DataRegistryImplementation } from "@/app/typechain-types";
-import { ITeePoolInterface } from "@/app/typechain-types/contracts/teePool/interfaces/ITeePool";
 
 const FIXED_MESSAGE = "Please sign to retrieve your encryption key";
 
@@ -88,7 +87,7 @@ export default function Page() {
     jobId: number
   ) => {
     try {
-      const job = await teePoolContract.jobs(jobId as any) as ITeePoolInterface["jobs"]["returnType"];
+      const job = await teePoolContract.jobs(jobId as any) as any;
       const teeInfo = await teePoolContract.tees(job.teeAddress);
 
       return { ...job, teeUrl: teeInfo.url };
@@ -108,7 +107,7 @@ export default function Page() {
     fileId: number
   ) => {
     try {
-      const jobIds = await teePoolContract.fileJobIds(fileId as TeePoolImplementationABI["fileJobIds"]["input"]["fileId"]);
+      const jobIds = await teePoolContract.fileJobIds(fileId as any);
       return jobIds.map(Number);
     } catch (error) {
       console.error("Error fetching file job IDs:", error);
@@ -124,9 +123,9 @@ export default function Page() {
   ) => {
     try {
       const jobIds = await teePoolContract.teeJobIdsPaginated(
-        teeAddress as TeePoolImplementationABI["teeJobIdsPaginated"]["input"]["teeAddress"],
-        start as TeePoolImplementationABI["teeJobIdsPaginated"]["input"]["start"],
-        end as TeePoolImplementationABI["teeJobIdsPaginated"]["input"]["end"]
+        teeAddress as any,
+        start as any,
+        end as any
       );
       return jobIds.map(Number);
     } catch (error) {
@@ -208,19 +207,19 @@ export default function Page() {
         contractAddress,
         DataLiquidityPoolABI.abi,
         signer
-      ) as DataLiquidityPoolImplementation;
+      ) as unknown as DataLiquidityPoolImplementation;
 
       const dataRegistryContract = new ethers.Contract(
         dataRegistryContractAddress,
         DataRegistryImplementationABI.abi,
         signer
-      ) as DataRegistryImplementation;
+      ) as unknown as DataRegistryImplementation;
 
       const teePoolContract = new ethers.Contract(
         teePoolContractAddress,
         TeePoolImplementationABI.abi,
         signer
-      ) as TeePoolImplementation;
+      ) as unknown as TeePoolImplementation;
 
       const masterKey = await dlpContract.masterKey();
       console.log("Master Key:", masterKey);
@@ -235,7 +234,11 @@ export default function Page() {
           key: encryptedKey
         }
       ];
-      const tx = await dataRegistryContract.addFileWithPermissions(encryptedDataUrl, walletAddress, permissions);
+      const tx = await dataRegistryContract.addFileWithPermissions(
+        encryptedDataUrl as any,
+        walletAddress as any,
+        permissions as any
+      );
       const receipt = await tx.wait();
       console.log("File added with permissions, transaction receipt:", receipt?.hash);
       if (receipt && receipt.logs.length > 0) {
@@ -271,10 +274,10 @@ export default function Page() {
       appendStatus(`TEE fee fetched: ${teeFeeInVana} VANA for running the contribution proof on the TEE`);
 
       appendStatus(`Requesting contribution proof from TEE for FileID: ${fileId}...`);
-      const contributionProofTx = await teePoolContract.requestContributionProof(fileId as TeePoolImplementationABI["requestContributionProof"]["input"]["fileId"]
-        , {
-        value: teeFee,
-      } as TeePoolImplementationABI["requestContributionProof"]["overrides"]);
+      const contributionProofTx = await teePoolContract.requestContributionProof(
+        fileId as any,
+        { value: teeFee } as any
+      );
       const contributionProofReceipt = await contributionProofTx.wait();
       appendStatus(`Contribution proof requested. Transaction hash: ${contributionProofReceipt?.hash}`);
 
@@ -326,7 +329,7 @@ export default function Page() {
         `Contribution proof response received from TEE. Requesting a reward...`
       );
 
-      const requestClaimTx = await dlpContract.requestReward(fileId, 1);
+      const requestClaimTx = await dlpContract.requestReward(fileId as any, 1 as any);
       await requestClaimTx.wait();
       console.log("Claim requested successfully");
 
