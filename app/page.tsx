@@ -16,7 +16,6 @@ import {
   Container,
   Dialog,
   Grid,
-  Image,
   Notification,
   Paper,
   Stack,
@@ -24,20 +23,21 @@ import {
   Title,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
-import { notifications } from "@mantine/notifications";
-import { ethers } from "ethers";
-import React, { useEffect, useRef, useState } from "react";
-import DataLiquidityPool from "@/app/contracts/DataLiquidityPoolLightImplementation.json";
-import TeePoolImplementation from "@/app/contracts/TeePoolImplementation.json";
-import DataRegistryImplementation from "@/app/contracts/DataRegistryImplementation.json";
+import { NotificationData, notifications } from "@mantine/notifications";
+import { ethers, EventLog } from "ethers";
+import React, { useEffect, useState } from "react";
+import DataLiquidityPoolABI from "@/app/contracts/DataLiquidityPoolLightImplementation.json";
+import TeePoolImplementationABI from "@/app/contracts/TeePoolImplementation.json";
+import DataRegistryImplementationABI from "@/app/contracts/DataRegistryImplementation.json";
 import { ConnectStep } from "./home/components/connect";
-import { Success } from "./home/components/success";
 import { UploadState } from "./home/components/upload";
-// import { UploadedFileState } from "./home/components/uploaded";
 import { UploadingState } from "./home/components/uploading";
 import { config } from "@/app/config";
 import { UploadedFileState } from "@/app/home/components/uploaded";
 import * as eccrypto from "eccrypto";
+
+import { DataLiquidityPoolImplementation, TeePoolImplementation, DataRegistryImplementation } from "@/app/typechain-types";
+import { ITeePoolInterface } from "@/app/typechain-types/contracts/teePool/interfaces/ITeePool";
 
 const FIXED_MESSAGE = "Please sign to retrieve your encryption key";
 
@@ -74,39 +74,22 @@ export default function Page() {
     setStatusLog(prevLog => [...prevLog, newStatus]);
   };
 
-  /**
-   * Encrypts the given data using the provided master key (public key).
-   *
-   * @param data - The data to encrypt.
-   * @param masterKey - The hexadecimal public key for encryption.
-   * @returns The encrypted data as a hexadecimal string.
-   */
   const encryptWithMasterKey = async (data: string, masterKey: string): Promise<string> => {
-    // Convert the public key to bytes and remove the '0x' prefix if present
     const publicKeyBytes = Buffer.from(masterKey.startsWith("0x") ? masterKey.slice(2) : masterKey, "hex");
-
-    // If the public key is not in the uncompressed format (starts with 0x04), add it
     const uncompressedKey = publicKeyBytes.length === 64 ? Buffer.concat([Buffer.from([4]), publicKeyBytes]) : publicKeyBytes;
 
-    // Encrypt the data
     const encryptedBuffer = await eccrypto.encrypt(uncompressedKey, Buffer.from(data));
-
-    // Combine the encrypted components into a single buffer and return as hex
     const encryptedHex = Buffer.concat([encryptedBuffer.iv, encryptedBuffer.ephemPublicKey, encryptedBuffer.ciphertext, encryptedBuffer.mac]).toString("hex");
     return encryptedHex;
   };
 
   const getTeeDetails = async (
-    teePoolContract: ethers.Contract,
+    teePoolContract: TeePoolImplementation,
     jobId: number
   ) => {
     try {
-      const job = await teePoolContract.jobs(jobId);
-      console.log("Job Details:", job);
-
-      // Fetch the TEE info using the teeAddress
+      const job = await teePoolContract.jobs(jobId as any) as ITeePoolInterface["jobs"]["returnType"];
       const teeInfo = await teePoolContract.tees(job.teeAddress);
-      console.log("TEE Info:", teeInfo);
 
       return { ...job, teeUrl: teeInfo.url };
     } catch (error) {
@@ -115,17 +98,17 @@ export default function Page() {
         color: "red",
         title: "Error",
         message: "Failed to fetch job details. Please try again.",
-      });
+      } as NotificationData);
       throw error;
     }
   };
 
   const fileJobIds = async (
-    teePoolContract: ethers.Contract,
+    teePoolContract: TeePoolImplementation,
     fileId: number
   ) => {
     try {
-      const jobIds = await teePoolContract.fileJobIds(fileId);
+      const jobIds = await teePoolContract.fileJobIds(fileId as TeePoolImplementationABI["fileJobIds"]["input"]["fileId"]);
       return jobIds.map(Number);
     } catch (error) {
       console.error("Error fetching file job IDs:", error);
@@ -134,13 +117,17 @@ export default function Page() {
   };
 
   const teeJobIdsPaginated = async (
-    teePoolContract: ethers.Contract,
+    teePoolContract: TeePoolImplementation,
     teeAddress: string,
     start: number,
     end: number
   ) => {
     try {
-      const jobIds = await teePoolContract.teeJobIdsPaginated(teeAddress, start, end);
+      const jobIds = await teePoolContract.teeJobIdsPaginated(
+        teeAddress as TeePoolImplementationABI["teeJobIdsPaginated"]["input"]["teeAddress"],
+        start as TeePoolImplementationABI["teeJobIdsPaginated"]["input"]["start"],
+        end as TeePoolImplementationABI["teeJobIdsPaginated"]["input"]["end"]
+      );
       return jobIds.map(Number);
     } catch (error) {
       console.error("Error fetching paginated TEE job IDs:", error);
@@ -148,13 +135,12 @@ export default function Page() {
     }
   };
 
-  const handleError = () => {
+  const handleError = (message: string) => {
     notifications.show({
       color: "red",
       title: "Error",
-      message:
-        "There was an error trying to encode your file. Please try again.",
-    });
+      message,
+    } as NotificationData)
   };
 
   const handleSetFile = async (file: File | null) => {
@@ -164,7 +150,7 @@ export default function Page() {
       }
     } catch (error) {
       setUploadState("initial");
-      handleError();
+      handleError("Error connecting wallet. Please try again.");
     }
 
     setFile(file);
@@ -173,7 +159,7 @@ export default function Page() {
   const handleFileUpload = async (file: File) => {
     if (!walletAddress) {
       setUploadState("initial");
-      handleError();
+      handleError("Wallet address not found. Please connect your wallet.");
       console.error("Wallet address not found");
       return;
     }
@@ -181,12 +167,10 @@ export default function Page() {
     try {
       setUploadState("loading");
       appendStatus(`Doing a client side file signing, asking user to sign the message to create a deterministic signature...`);
-      // Sign a fixed message with the user's wallet to create a deterministic signature
       const signature = await signMessage(walletAddress, FIXED_MESSAGE);
       console.log("Signature:", signature);
       appendStatus(`Signature created: '${signature}'`);
 
-      // Encrypt the file using the signature as the symmetric key
       const encryptedData = await clientSideEncrypt(file, signature);
       const encryptedFile = new Blob([encryptedData], {
         type: "application/octet-stream",
@@ -203,7 +187,6 @@ export default function Page() {
         storageProvider
       );
 
-      // Get shareUrl to file in storage
       const encryptedDataUrl = await getEncryptedDataUrl(
         dropboxToken,
         uploadedFileMetadata.id,
@@ -212,51 +195,39 @@ export default function Page() {
       console.log("encryptedDataUrl:", encryptedDataUrl);
 
       setShareUrl(encryptedDataUrl);
-
       setUploadedFileMetadata(uploadedFileMetadata);
-
       setEncryptedFile(encryptedFile);
 
       setUploadState("done");
       appendStatus(`File uploaded to ${encryptedDataUrl}`);
 
-      // Initialize contracts TODO: Move this to a separate function - file
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
 
-      // DLP light contract
-      const contractABI = [...DataLiquidityPool.abi];
-      const dlpLightContract = new ethers.Contract(
-        contractAddress as string,
-        contractABI,
+      const dlpContract = new ethers.Contract(
+        contractAddress,
+        DataLiquidityPoolABI.abi,
         signer
-      );
+      ) as DataLiquidityPoolImplementation;
 
-      // Data Registry contract
-      const dataRegistryContractABI = [...DataRegistryImplementation.abi];
       const dataRegistryContract = new ethers.Contract(
         dataRegistryContractAddress,
-        dataRegistryContractABI,
+        DataRegistryImplementationABI.abi,
         signer
-      );
+      ) as DataRegistryImplementation;
 
-      // TEE Pool contract
-      const teePoolContractABI = [...TeePoolImplementation.abi];
       const teePoolContract = new ethers.Contract(
         teePoolContractAddress,
-        teePoolContractABI,
+        TeePoolImplementationABI.abi,
         signer
-      );
+      ) as TeePoolImplementation;
 
-      // Get master key from DLP contract
-      const masterKey = await dlpLightContract.masterKey();
+      const masterKey = await dlpContract.masterKey();
       console.log("Master Key:", masterKey);
 
-      // Encrypt the signature using the master key
       const encryptedKey = await encryptWithMasterKey(signature, masterKey);
       console.log(`encryptedKey: '${encryptedKey}'`);
 
-      // User adds file to the DataRegistry contract and sets permissions in one transaction
       appendStatus("Adding file to DataRegistry contract with permissions. Requesting user for permission...");
       const permissions = [
         {
@@ -266,33 +237,49 @@ export default function Page() {
       ];
       const tx = await dataRegistryContract.addFileWithPermissions(encryptedDataUrl, walletAddress, permissions);
       const receipt = await tx.wait();
-      console.log("File added with permissions, transaction receipt:", receipt.hash);
+      console.log("File added with permissions, transaction receipt:", receipt?.hash);
+      if (receipt && receipt.logs.length > 0) {
+        const eventLog = receipt.logs[0] as EventLog;
 
-      // Get file id from receipt transaction log
-      const log = receipt.logs[0];
-      const fileId = Number(log.args[0]);
-      console.log("File ID:", fileId);
-      setFileId(fileId);
+        // Check if the event is the one we're expecting
+        if (eventLog.topics[0] === ethers.id("FileAdded(uint256,address,string)")) {
+          const decodedLog = dataRegistryContract.interface.parseLog({
+            topics: eventLog.topics,
+            data: eventLog.data,
+          });
+
+          if (decodedLog && decodedLog.args) {
+            const fileId = decodedLog.args[0];
+            const owner = decodedLog.args[1];
+            const url = decodedLog.args[2];
+
+            console.log("File ID:", fileId);
+            console.log("Owner:", owner);
+            console.log("URL:", url);
+
+            setFileId(Number(fileId));
+          }
+        }
+      }
       appendStatus(`File added to DataRegistry contract with permissions, file id is '${fileId}'. Requesting TEE fees from the TeePool contract...`);
 
       setUploadState("done");
       console.log(`File uploaded with ID: ${fileId}`);
 
-      // TEE Proof
       const teeFee = await teePoolContract.teeFee();
       const teeFeeInVana = ethers.formatUnits(teeFee, 18);
       appendStatus(`TEE fee fetched: ${teeFeeInVana} VANA for running the contribution proof on the TEE`);
 
       appendStatus(`Requesting contribution proof from TEE for FileID: ${fileId}...`);
-      const contributionProofTx = await teePoolContract.requestContributionProof(fileId, {
+      const contributionProofTx = await teePoolContract.requestContributionProof(fileId as TeePoolImplementationABI["requestContributionProof"]["input"]["fileId"]
+        , {
         value: teeFee,
-      });
+      } as TeePoolImplementationABI["requestContributionProof"]["overrides"]);
       const contributionProofReceipt = await contributionProofTx.wait();
-      appendStatus(`Contribution proof requested. Transaction hash: ${contributionProofReceipt.hash}`);
+      appendStatus(`Contribution proof requested. Transaction hash: ${contributionProofReceipt?.hash}`);
 
-      // Use fileJobIds to get the latest job for the file
-      const jobIds = await fileJobIds(teePoolContract, fileId);
-      const latestJobId = jobIds[jobIds.length - 1];
+      const jobIds = await fileJobIds(teePoolContract, fileId as number);
+      const latestJobId = jobIds[jobIds.length - 1] as number;
       appendStatus(`Latest JobID for FileID ${fileId}: ${latestJobId}`);
 
       const jobDetails = await getTeeDetails(teePoolContract, latestJobId);
@@ -304,15 +291,8 @@ export default function Page() {
         jobDetails.teeUrl
       );
 
-      // Implement the GET request to the TEE attestation endpoint
-      console.log(
-        `TODO: Implement GET request to TEE attestation endpoint ${jobDetails.teeUrl}/attestation`
-      );
-
-      // User Sends POST request to TEE /contribution-proofs endpoint with fileId and encryptedFileKey
       appendStatus(`Sending contribution proof request to TEE`);
 
-      // TODO: Move to separate function
       const contributionProofResponse = await fetch(
         `${jobDetails.teeUrl}/RunProof`,
         {
@@ -346,8 +326,7 @@ export default function Page() {
         `Contribution proof response received from TEE. Requesting a reward...`
       );
 
-      // After that user calls requestClaim(fileId) on the DLP contract to request the claim
-      const requestClaimTx = await dlpLightContract.requestReward(fileId, 1);
+      const requestClaimTx = await dlpContract.requestReward(fileId, 1);
       await requestClaimTx.wait();
       console.log("Claim requested successfully");
 
@@ -357,7 +336,7 @@ export default function Page() {
       console.error("Error encrypting and uploading file:", error);
       setUploadState("initial");
       appendStatus("Error: Failed to encrypt and upload file");
-      handleError();
+      handleError("Failed to encrypt and upload file. Please try again.");
     }
   };
 
@@ -370,7 +349,9 @@ export default function Page() {
   useEffect(() => {
     if (!file) return;
 
-    handleFileUpload(file);
+    handleFileUpload(file).then(() => {
+      console.log("File upload complete");
+    });
   }, [file]);
 
   return (
@@ -385,7 +366,6 @@ export default function Page() {
           >
             <Stack gap="md">
               <Title order={5}>
-                {/*{uploadState === "done" ? "Congratulations" : "Upload data"}*/}
                 Contribute data
               </Title>
 
@@ -438,8 +418,6 @@ export default function Page() {
                   make sure you have a wallet connected and try again.
                 </Notification>
               </Dialog>
-
-              {/*{uploadState === "done" && fileId && <Success fileId={fileId} />}*/}
             </Stack>
           </Grid.Col>
         </Grid>
